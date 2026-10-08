@@ -532,3 +532,65 @@ describe('dungeons', () => {
     expect(here(c.run!).type).toBe('start');
   });
 });
+
+import { feed, loyaltyNow, resurrect, tameChance, tickPets, usedSlots } from './pets';
+import { startCombat } from './combat';
+
+function ranger(seed = 4) {
+  const rng = mulberry32(seed);
+  const s = newGameState('en');
+  const c = createCharacter(s, 'Ylva', 'elf', 'ranger', rollCharacter('elf', 'ranger', rng));
+  return { s, c, rng };
+}
+
+describe('taming and pets', () => {
+  it('rangers start with a bow and arrows', () => {
+    const { c } = ranger();
+    expect(weaponInfo(c).skill).toBe('archery');
+    expect(c.pack.res.arrow).toBe(60);
+  });
+
+  it('taming needs skill and control slots; a tamed animal fights for you', () => {
+    const { s, c } = ranger();
+    const rng = mulberry32(8);
+    c.skills.taming = 900;
+    expect(tameChance(c, 'drake')).toBeGreaterThan(0);
+    expect(tameChance(c, 'skeleton')).toBe(0);
+    enter(s, c, 'wilds', rng);
+    c.run!.combat = startCombat(['wolf', 'wolf']);
+    let tries = 0;
+    while (c.pets.length === 0 && tries++ < 30) {
+      c.hp = 999;
+      fight(s, c, { type: 'tame' }, rng);
+    }
+    expect(c.pets.length).toBe(1);
+    expect(usedSlots(c)).toBe(1);
+    // the pet helps finish the fight
+    while (c.run?.combat) {
+      c.hp = 999;
+      fight(s, c, { type: 'attack' }, rng);
+    }
+    expect(c.run!.log.some((e) => e.k === 'fight.allyHit' || e.k === 'fight.allyMiss')).toBe(true);
+  });
+
+  it('loyalty drops over time; hungry pets run off, fed and loyal pets bond', () => {
+    const { c } = ranger();
+    const now = Date.now();
+    c.pets.push({ id: 1, kind: 'wolf', hp: 36, skill: 300, loyalty: 60, fedAt: now - 13 * 3600_000, tamedAt: now - 30 * 3600_000, bonded: false, dead: false });
+    expect(loyaltyNow(c.pets[0], now)).toBe(0);
+    expect(tickPets(c, now).ran.length).toBe(1);
+    c.pets.push({ id: 2, kind: 'wolf', hp: 36, skill: 300, loyalty: 40, fedAt: now, tamedAt: now - 30 * 3600_000, bonded: false, dead: false });
+    c.pack.res.perch = 1;
+    expect(feed(c, c.pets[0], 'perch', now)).toBe(true);
+    expect(tickPets(c, now).bonded.length).toBe(1);
+  });
+
+  it('a bonded pet that dies can be brought back with Animal Healing', () => {
+    const { c } = ranger();
+    c.skills.animalHealing = 1000;
+    c.pack.res.bandage = 5;
+    c.pets.push({ id: 3, kind: 'bear', hp: 0, skill: 400, loyalty: 80, fedAt: Date.now(), tamedAt: 0, bonded: true, dead: true });
+    expect(resurrect(c, c.pets[0], () => 0.01)).toBe(true);
+    expect(c.pets[0].dead).toBe(false);
+  });
+});

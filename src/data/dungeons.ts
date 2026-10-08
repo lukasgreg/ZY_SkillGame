@@ -6,6 +6,7 @@ export const MONSTER_IDS = [
   'skeleton', 'ghoul', 'wraith', 'hollowLord',
   'zombie', 'boneKnight', 'lichAcolyte', 'bonepriest',
   'gnarlScout', 'gnarlBrute', 'gnarlShaman', 'gnarlWarlord',
+  'boar', 'wolf', 'bear', 'direwolf', 'drake',
 ] as const;
 export type MonsterId = (typeof MONSTER_IDS)[number];
 
@@ -52,9 +53,29 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
   gnarlBrute: m('gnarlBrute', 115, 78, [14, 24], 6, 5, [25, 55]),
   gnarlShaman: m('gnarlShaman', 125, 88, [16, 26], 4, 11, [60, 120], [['etherealOre', 0.4, 1, 3], ['planFragment', 0.25, 1, 1]]),
   gnarlWarlord: m('gnarlWarlord', 400, 96, [20, 32], 8, 10, [500, 900], [['dragonScale', 0.8, 2, 4], ['planFragment', 1, 2, 4], ['wayHome', 0.6, 1, 2]]),
+
+  boar: m('boar', 30, 30, [4, 9], 1, 9, [0, 2]),
+  wolf: m('wolf', 36, 38, [5, 10], 1, 13, [0, 2]),
+  bear: m('bear', 70, 50, [8, 15], 2, 7, [0, 4]),
+  direwolf: m('direwolf', 90, 64, [11, 18], 2, 14, [5, 15], [['planFragment', 0.1, 1, 1]]),
+  drake: m('drake', 220, 85, [16, 26], 5, 11, [80, 160], [['dragonScale', 0.9, 2, 4], ['planFragment', 0.6, 1, 2]]),
 };
 
-export const DUNGEON_IDS = ['cellar', 'frostCave', 'manor', 'crypt', 'warrens'] as const;
+/** Animals a ranger can tame (design 7): Taming needed and control slots used (max 5). */
+export const TAMEABLE: Partial<Record<MonsterId, { min: number; slots: number }>> = {
+  rat: { min: 0, slots: 1 },
+  iceBat: { min: 15, slots: 1 },
+  boar: { min: 20, slots: 1 },
+  wolf: { min: 30, slots: 1 },
+  frostWolf: { min: 40, slots: 1 },
+  bear: { min: 50, slots: 2 },
+  direwolf: { min: 65, slots: 2 },
+  drake: { min: 85, slots: 3 },
+};
+
+export const MAX_CONTROL_SLOTS = 5;
+
+export const DUNGEON_IDS = ['wilds', 'cellar', 'frostCave', 'manor', 'crypt', 'warrens'] as const;
 export type DungeonId = (typeof DUNGEON_IDS)[number];
 
 export interface DungeonDef {
@@ -71,6 +92,7 @@ export interface DungeonDef {
 }
 
 export const DUNGEONS: Record<DungeonId, DungeonDef> = {
+  wilds: { id: 'wilds', skulls: 2, clocks: 1, pool: ['boar', 'wolf'], elite: 'bear', boss: 'drake', chest: [10, 40] },
   cellar: { id: 'cellar', skulls: 1, clocks: 1, pool: ['rat', 'smuggler'], elite: 'thug', boss: 'smugglerChief', chest: [20, 60] },
   frostCave: { id: 'frostCave', skulls: 2, clocks: 2, pool: ['iceBat', 'frostWolf'], elite: 'caveTroll', boss: 'frostfang', chest: [40, 120] },
   manor: { id: 'manor', skulls: 3, clocks: 2, pool: ['skeleton', 'ghoul'], elite: 'wraith', boss: 'hollowLord', chest: [80, 200] },

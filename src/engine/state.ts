@@ -5,7 +5,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon';
@@ -59,6 +59,7 @@ export interface Character {
   run: Run | null;
   /** Where this character last died, until it decays. */
   corpse: Corpse | null;
+  pets: Pet[];
   /** One-use plans owned, by count. */
   plans: Partial<Record<PlanId, number>>;
   /** uid of the preferred tool in hand, if any. */
@@ -133,8 +134,27 @@ export interface Foe {
   stunned: number;
 }
 
+/** A tamed animal (design 7). */
+export interface Pet {
+  id: number;
+  kind: MonsterId;
+  hp: number;
+  /** Fighting skill in tenths; grows as the pet fights. */
+  skill: number;
+  /** Loyalty when last fed; it drops 5 per hour from `fedAt`. */
+  loyalty: number;
+  fedAt: number;
+  tamedAt: number;
+  bonded: boolean;
+  /** A bonded pet that died: it waits as a spirit until Animal Healing brings it back. */
+  dead: boolean;
+}
+
 export interface Combat {
   foes: Foe[];
+  /** A summoned animal (Call of the Wild) fighting for this battle only. */
+  summon: Foe | null;
+  summoned: boolean;
   round: number;
   secondWindUsed: boolean;
   /** A bandage being applied; it lands at the end of the round unless you are hit. */

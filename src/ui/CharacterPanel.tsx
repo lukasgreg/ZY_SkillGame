@@ -9,6 +9,7 @@ import { armorValue, equipped, weaponInfo } from '../engine/combat';
 import { takeOff, wear } from './actions';
 import { Card, Durability, Meter } from './common';
 import { Pack } from './Pack';
+import { Stable } from './Stable';
 
 const SLOTS: Slot[] = ['weapon', 'shield', 'head', 'body'];
 
@@ -83,6 +84,7 @@ export function CharacterPanel({ c }: { c: Character }) {
       </Card>
       <div class="stack">
         <Equipment c={c} />
+        <Stable c={c} />
         <Pack c={c} />
       </div>
     </div>

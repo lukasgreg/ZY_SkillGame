@@ -3,6 +3,7 @@ import type { Recipe } from '../data/recipes';
 import type { DungeonId } from '../data/dungeons';
 import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
+import { feed, healPet, release, resurrect } from '../engine/pets';
 import { camp, enter, fight, here, leave, lootCorpse, move, reengage, scout, useRepairKit, wayHome } from '../engine/dungeon';
 import { PLANS, type PlanId } from '../data/plans';
 import { abandon, accept, combineFragments, craftPlan, fortify, handIn } from '../engine/contracts';
@@ -13,7 +14,7 @@ import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import { eat } from '../engine/character';
 import { canGather, findNode, isGatherLoc, pull, swingTime } from '../engine/gather';
 import { defaultRng } from '../engine/rng';
-import { activeChar, log, type Character, type Contract, type GameState, type ItemInstance, type Location, type Stance, type Wanderer } from '../engine/state';
+import { activeChar, log, type Character, type Contract, type GameState, type ItemInstance, type Location, type Pet, type Stance, type Wanderer } from '../engine/state';
 import { buyItem, buyRes, buyResPrice, depositAll, npcRepair, npcRepairCost, sellRes } from '../engine/town';
 import { itemParam, skillNum, t } from '../i18n';
 import { getState, touch, transient, update } from './store';
@@ -403,5 +404,41 @@ export function fieldRepair(uid: number): void {
   withChar((s, c) => {
     const it = c.pack.items.find((i) => i.uid === uid);
     if (it && useRepairKit(c, uid)) log(s, 'log.repairKit', { item: itemParam(it) }, 'good');
+  });
+}
+
+/* ---------------- pets ---------------- */
+
+function withPet(id: number, fn: (s: GameState, c: Character, p: Pet) => void): void {
+  withChar((s, c) => {
+    const p = c.pets.find((x) => x.id === id);
+    if (p) fn(s, c, p);
+  });
+}
+
+export function feedPet(id: number, food: ResourceId): void {
+  withPet(id, (s, c, p) => {
+    if (feed(c, p, food)) log(s, 'log.pet.fed', { pet: `@mon.${p.kind}`, res: `@res.${food}` }, 'good');
+  });
+}
+
+export function healMyPet(id: number): void {
+  withPet(id, (s, c, p) => {
+    const n = healPet(c, p, rng);
+    if (n) log(s, 'log.pet.healed', { pet: `@mon.${p.kind}`, n }, 'good');
+  });
+}
+
+export function resurrectPet(id: number): void {
+  withPet(id, (s, c, p) => {
+    const r = resurrect(c, p, rng);
+    if (r !== null) log(s, r ? 'log.pet.back' : 'log.pet.backFailed', { pet: `@mon.${p.kind}` }, r ? 'gain' : 'bad');
+  });
+}
+
+export function releasePet(id: number): void {
+  withPet(id, (s, c, p) => {
+    release(c, p);
+    log(s, 'log.pet.released', { pet: `@mon.${p.kind}` }, 'sys');
   });
 }

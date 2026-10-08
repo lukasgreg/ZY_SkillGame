@@ -8,6 +8,7 @@ import { tickWanderers } from '../engine/wanderers';
 import { catchUp } from '../engine/workers';
 import { tickContracts } from '../engine/contracts';
 import { decay } from '../engine/dungeon';
+import { restPets, tickPets } from '../engine/pets';
 import type { ResourceId } from '../data/resources';
 import { detectLang, setLang } from '../i18n';
 
@@ -92,7 +93,14 @@ export function startClock(): void {
     regen(c, Date.now());
     if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
     if (tickContracts(state, c, defaultRng, Date.now())) scheduleSave();
-    for (const ch of state.chars) if (decay(ch)) log(state, 'log.dun.decayed', { name: ch.name }, 'bad');
+    for (const ch of state.chars) {
+      if (decay(ch)) log(state, 'log.dun.decayed', { name: ch.name }, 'bad');
+      if (!ch.pets.length) continue;
+      const { ran, bonded } = tickPets(ch);
+      for (const p of ran) log(state, 'log.pet.ran', { pet: `@mon.${p.kind}` }, 'bad');
+      for (const p of bonded) log(state, 'log.pet.bondedNow', { pet: `@mon.${p.kind}` }, 'gain');
+      if (!ch.run?.combat) restPets(ch, 1000);
+    }
     if (state.workers.length) {
       catchUp(state, Date.now(), defaultRng);
       scheduleSave();

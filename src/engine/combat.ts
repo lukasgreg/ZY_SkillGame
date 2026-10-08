@@ -1,4 +1,5 @@
-import { MONSTERS, type MonsterId } from '../data/dungeons';
+import { MONSTERS, TAMEABLE, type MonsterId } from '../data/dungeons';
+import { canControl, healPet, petMaxHp, petSkillCap, tryTame } from './pets';
 import { ITEMS, METALS, slotOf, type Slot } from '../data/items';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
@@ -6,7 +7,7 @@ import { addRes, eat } from './character';
 import { wear } from './craft';
 import { chance, clamp, randInt, type Rng } from './rng';
 import { isPowerHour, maxHp, maxStamina, trySkillGain, tryStatGain } from './skills';
-import type { Character, Combat, Foe, ItemInstance, LogEntry, Run, Stance } from './state';
+import type { Character, Combat, Foe, ItemInstance, LogEntry, Pet, Run, Stance } from './state';
 
 /* ---------------- equipment ---------------- */
 
@@ -66,7 +67,9 @@ export function usesArrows(c: Character): boolean {
 export const STANCE_DEALT: Record<Stance, number> = { normal: 1, combat: 1.25, defensive: 0.7 };
 export const STANCE_TAKEN: Record<Stance, number> = { normal: 1, combat: 1.25, defensive: 0.7 };
 
+/** Stances are a warrior's art (Andaria). */
 export function canStance(c: Character, st: Stance): boolean {
+  if (st !== 'normal' && c.profession !== 'warrior') return false;
   if (st === 'combat') return c.skills.tactics >= 500;
   if (st === 'defensive') return c.skills.shieldBlock >= 500 && !!equipped(c, 'shield');
   return true;
@@ -80,11 +83,16 @@ export function setStance(c: Character, st: Stance): boolean {
   return true;
 }
 
-export type Ability = 'secondWind' | 'crushingBlow' | 'leap' | 'warcry';
-export const ABILITY_COST: Record<Ability, number> = { secondWind: 0, crushingBlow: 15, leap: 20, warcry: 15 };
+export type Ability = 'secondWind' | 'crushingBlow' | 'leap' | 'warcry' | 'callWild';
+export const ABILITY_COST: Record<Ability, number> = { secondWind: 0, crushingBlow: 15, leap: 20, warcry: 15, callWild: 30 };
+
+/** Who may use an ability at all: warriors their stance moves, rangers Call of the Wild. */
+export function abilityFor(c: Character, a: Ability): boolean {
+  return a === 'callWild' ? c.profession === 'ranger' : c.profession === 'warrior';
+}
 
 export function abilityOk(c: Character, cb: Combat, a: Ability): boolean {
-  if (c.stamina < ABILITY_COST[a]) return false;
+  if (!abilityFor(c, a) || c.stamina < ABILITY_COST[a]) return false;
   switch (a) {
     case 'secondWind':
       return c.stance === 'normal' && !cb.secondWindUsed;
@@ -94,6 +102,8 @@ export function abilityOk(c: Character, cb: Combat, a: Ability): boolean {
       return c.stance === 'combat';
     case 'warcry':
       return c.stance === 'defensive';
+    case 'callWild':
+      return c.profession === 'ranger' && !cb.summoned;
   }
 }
 
@@ -104,6 +114,8 @@ export type Action =
   | { type: 'ability'; id: Ability }
   | { type: 'bandage' }
   | { type: 'eat'; res: ResourceId }
+  | { type: 'tame' }
+  | { type: 'healPet' }
   | { type: 'flee' };
 
 export type Outcome = 'continue' | 'won' | 'died' | 'fled';
@@ -121,7 +133,7 @@ export function hitChance(atk: number, def: number, tactics = 0): number {
 }
 
 export function startCombat(kinds: MonsterId[]): Combat {
-  return { foes: kinds.map((k) => ({ kind: k, hp: MONSTERS[k].hp, stunned: 0 })), round: 1, secondWindUsed: false, bandaging: false, cowed: 0, first: false };
+  return { foes: kinds.map((k) => ({ kind: k, hp: MONSTERS[k].hp, stunned: 0 })), summon: null, summoned: false, round: 1, secondWindUsed: false, bandaging: false, cowed: 0, first: false };
 }
 
 function gainOpts(foeSkill: number, now: Date) {
@@ -178,9 +190,75 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   }
 }
 
-/** A foe's attack on you: shield block, armor, stance and wear. */
+type Ally = { pet: Pet } | { summon: Foe };
+
+/** Your living pets and summon, in battle order. */
+export function allies(c: Character, cb: Combat): Ally[] {
+  const out: Ally[] = c.pets.filter((p) => !p.dead && p.hp > 0).map((pet) => ({ pet }));
+  if (cb.summon && cb.summon.hp > 0) out.push({ summon: cb.summon });
+  return out;
+}
+
+const allyKind = (a: Ally) => ('pet' in a ? a.pet.kind : a.summon.kind);
+const allyName = (a: Ally) => `@mon.${allyKind(a)}`;
+
+/** A pet or summon attacks the first living foe. Pets learn as they fight. */
+function allyAttack(c: Character, run: Run, cb: Combat, a: Ally, rng: Rng): void {
+  const target = cb.foes.find((f) => f.hp > 0);
+  if (!target) return;
+  const mon = MONSTERS[target.kind];
+  const me = MONSTERS[allyKind(a)];
+  const skill = 'pet' in a ? a.pet.skill / 10 : me.skill * 0.8;
+  const hit = rng() < hitChance(skill, mon.skill);
+  if ('pet' in a && a.pet.skill < petSkillCap(a.pet) && rng() < 0.15) a.pet.skill += 1;
+  if (!hit) {
+    say(run, 'fight.allyMiss', { ally: allyName(a), foe: foeName(target) });
+    return;
+  }
+  const dmg = Math.max(1, Math.round(randInt(rng, me.dmg[0], me.dmg[1]) * (0.8 + skill / 500 + c.skills.animalLore / 4000) - mon.armor * 0.5));
+  target.hp -= dmg;
+  say(run, 'fight.allyHit', { ally: allyName(a), foe: foeName(target), dmg }, 'good');
+  if (target.hp <= 0) {
+    target.hp = 0;
+    say(run, 'fight.kill', { foe: foeName(target) }, 'gain');
+  }
+}
+
+/** A foe goes for one of your animals instead of you. */
+function foeAttackAlly(c: Character, run: Run, f: Foe, a: Ally, rng: Rng): void {
+  const mon = MONSTERS[f.kind];
+  const def = 'pet' in a ? a.pet.skill / 10 : MONSTERS[a.summon.kind].skill * 0.8;
+  if (rng() >= hitChance(mon.skill, def)) {
+    say(run, 'fight.foeMissAlly', { foe: foeName(f), ally: allyName(a) });
+    return;
+  }
+  const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) - MONSTERS[allyKind(a)].armor * 0.5));
+  say(run, 'fight.allyHurt', { foe: foeName(f), ally: allyName(a), dmg }, 'bad');
+  if ('summon' in a) {
+    a.summon.hp -= dmg;
+    if (a.summon.hp <= 0) say(run, 'fight.summonGone', { ally: allyName(a) }, 'sys');
+    return;
+  }
+  a.pet.hp -= dmg;
+  if (a.pet.hp > 0) return;
+  a.pet.hp = 0;
+  if (a.pet.bonded) {
+    a.pet.dead = true;
+    say(run, 'fight.petFallen', { ally: allyName(a) }, 'bad');
+  } else {
+    c.pets = c.pets.filter((p) => p !== a.pet);
+    say(run, 'fight.petLost', { ally: allyName(a) }, 'bad');
+  }
+}
+
+/** A foe's attack on you: shield block, armor, stance and wear. With pets around, half the blows go to them. */
 function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolean {
   const mon = MONSTERS[f.kind];
+  const team = allies(c, cb);
+  if (team.length && rng() < 0.5) {
+    foeAttackAlly(c, run, f, team[Math.floor(rng() * team.length)], rng);
+    return false;
+  }
   const w = weaponInfo(c);
   const def = c.skills[w.skill] / 10;
   const p = hitChance(mon.skill, def) * (cb.cowed > 0 ? 0.75 : 1);
@@ -240,10 +318,15 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
   const cb = run.combat!;
   const myInit = c.stats.dex + randInt(rng, 0, 10) + (1.2 - weaponInfo(c).speed) * 20 + (cb.first ? 100 : 0);
   cb.first = false;
-  const order: ({ who: 'me' } | { who: 'foe'; f: Foe })[] = [{ who: 'me' }];
+  type Turn = { who: 'me' } | { who: 'foe'; f: Foe } | { who: 'ally'; a: Ally };
+  const order: Turn[] = [{ who: 'me' }];
   for (const f of cb.foes) if (f.hp > 0) order.push({ who: 'foe', f });
+  for (const a of allies(c, cb)) order.push({ who: 'ally', a });
   const init = new Map<unknown, number>();
-  for (const o of order) init.set(o, o.who === 'me' ? myInit : MONSTERS[o.f.kind].speed + randInt(rng, 0, 10));
+  for (const o of order) {
+    const kind = o.who === 'foe' ? o.f.kind : o.who === 'ally' ? allyKind(o.a) : null;
+    init.set(o, kind ? MONSTERS[kind].speed + randInt(rng, 0, 10) : myInit);
+  }
   order.sort((a, b) => init.get(b)! - init.get(a)!);
 
   let hitThisRound = false;
@@ -252,6 +335,9 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
     if (o.who === 'me') {
       const r = myTurn(c, run, cb, action, rng);
       if (r === 'fled') return 'fled';
+    } else if (o.who === 'ally') {
+      const alive = 'pet' in o.a ? o.a.pet.hp > 0 && !o.a.pet.dead && c.pets.includes(o.a.pet) : o.a.summon.hp > 0;
+      if (alive) allyAttack(c, run, cb, o.a, rng);
     } else if (o.f.hp > 0) {
       if (o.f.stunned > 0) {
         o.f.stunned -= 1;
@@ -296,7 +382,34 @@ function myTurn(c: Character, run: Run, cb: Combat, action: Action, rng: Rng): '
       else if (action.id === 'leap') {
         attack(c, run, cb, rng, { dmgMult: 1.5, hitBonus: 0.15 });
         cb.first = true;
+      } else if (action.id === 'callWild') {
+        cb.summoned = true;
+        const kind: MonsterId = c.skills.animalLore >= 600 ? 'bear' : 'wolf';
+        cb.summon = { kind, hp: MONSTERS[kind].hp, stunned: 0 };
+        say(run, 'fight.summoned', { ally: `@mon.${kind}` }, 'good');
       } else cb.cowed = 2;
+      return;
+    }
+    case 'tame': {
+      const target = cb.foes.find((f) => f.hp > 0 && TAMEABLE[f.kind]);
+      if (!target) return;
+      if (!canControl(c, target.kind)) {
+        say(run, 'fight.tameNoSlots', { foe: foeName(target) }, 'bad');
+        return;
+      }
+      const pet = tryTame(c, target.kind, rng);
+      if (pet) {
+        pet.hp = Math.max(1, target.hp);
+        cb.foes = cb.foes.filter((f) => f !== target);
+        say(run, 'fight.tamed', { foe: foeName(target) }, 'gain');
+      } else say(run, 'fight.tameFailed', { foe: foeName(target) }, 'bad');
+      return;
+    }
+    case 'healPet': {
+      const hurt = c.pets.filter((p) => !p.dead && p.hp < petMaxHp(p)).sort((a, b) => a.hp / petMaxHp(a) - b.hp / petMaxHp(b))[0];
+      if (!hurt) return;
+      const n = healPet(c, hurt, rng);
+      if (n) say(run, 'fight.petHealed', { ally: `@mon.${hurt.kind}`, n }, 'good');
       return;
     }
     case 'bandage':

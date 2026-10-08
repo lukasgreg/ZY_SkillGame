@@ -1,6 +1,7 @@
-import { DUNGEONS, DUNGEON_IDS, MONSTERS } from '../data/dungeons';
+import { DUNGEONS, DUNGEON_IDS, MONSTERS, TAMEABLE } from '../data/dungeons';
+import { canControl, petMaxHp, tameChance, vetHeal } from '../engine/pets';
 import { RESOURCES, type ResourceId } from '../data/resources';
-import { ABILITY_COST, abilityOk, armorValue, bandageHeal, fleeChance, hitChance, usesArrows, weaponInfo, type Ability } from '../engine/combat';
+import { ABILITY_COST, abilityFor, abilityOk, allies, armorValue, bandageHeal, fleeChance, hitChance, usesArrows, weaponInfo, type Ability } from '../engine/combat';
 import { canLeave, corpseFresh, exits, here, scoutCost } from '../engine/dungeon';
 import { maxHp, maxStamina } from '../engine/skills';
 import type { Character, DNode, GameState, Run, Stance } from '../engine/state';
@@ -12,7 +13,7 @@ import { Card, JournalLines, Meter } from './common';
 import { transient } from './store';
 
 const GLYPH: Record<DNode['type'], string> = { start: '⌂', monster: '⚔', elite: '✦', treasure: '◆', shrine: '✚', trap: '⚠', boss: '☠' };
-const ABILITIES: Ability[] = ['secondWind', 'crushingBlow', 'leap', 'warcry'];
+const ABILITIES: Ability[] = ['secondWind', 'crushingBlow', 'leap', 'warcry', 'callWild'];
 const STANCES: Stance[] = ['normal', 'combat', 'defensive'];
 
 function Rating({ n, glyph, label }: { n: number; glyph: string; label: string }) {
@@ -149,6 +150,7 @@ function Fight({ c, run }: { c: Character; run: Run }) {
   const target = cb.foes.find((f) => f.hp > 0);
   const p = target ? hitChance(c.skills[w.skill] / 10, MONSTERS[target.kind].skill, c.skills.tactics / 10) : 0;
   const foods = (Object.keys(c.pack.res) as ResourceId[]).filter((id) => RESOURCES[id].food);
+  const tameable = c.skills.taming > 0 ? cb.foes.find((f) => f.hp > 0 && TAMEABLE[f.kind]) : undefined;
   return (
     <Card title={t('fight.title', { n: cb.round })}>
       <ul class="foes">
@@ -165,18 +167,37 @@ function Fight({ c, run }: { c: Character; run: Run }) {
           </li>
         ))}
       </ul>
-      <div class="stances" role="radiogroup" aria-label={t('fight.stance')}>
+      {allies(c, cb).length > 0 && (
+        <ul class="foes allies">
+          {allies(c, cb).map((a, i) => {
+            const kind = 'pet' in a ? a.pet.kind : a.summon.kind;
+            const hp = 'pet' in a ? a.pet.hp : a.summon.hp;
+            return (
+              <li key={i}>
+                <span>
+                  {t(`mon.${kind}`)} <span class="muted small">{'pet' in a ? t('pet.yours') : t('pet.summoned')}</span>
+                </span>
+                <Meter value={hp} max={MONSTERS[kind].hp} kind="stamina" />
+                <span class="small">
+                  {Math.floor(hp)}/{MONSTERS[kind].hp}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {c.profession === 'warrior' && <div class="stances" role="radiogroup" aria-label={t('fight.stance')}>
         {STANCES.map((st) => (
           <button key={st} role="radio" aria-checked={c.stance === st} class={`metal ${c.stance === st ? 'on' : ''}`} disabled={busy} onClick={() => changeStance(st)} title={t(`stance.${st}.tip`)}>
             {t(`stance.${st}`)}
           </button>
         ))}
-      </div>
+      </div>}
       <div class="actions-grid">
         <button class="btn btn-primary" disabled={busy} onClick={() => fightAction({ type: 'attack' })}>
           {t('fight.attack', { p: Math.round(p * 100) })}
         </button>
-        {ABILITIES.map((a) => (
+        {ABILITIES.filter((a) => abilityFor(c, a)).map((a) => (
           <button key={a} class="btn" disabled={busy || !abilityOk(c, cb, a)} onClick={() => fightAction({ type: 'ability', id: a })} title={t(`ability.${a}.tip`)}>
             {t(`ability.${a}`)} {ABILITY_COST[a] ? <span class="muted small">({ABILITY_COST[a]})</span> : null}
           </button>
@@ -189,6 +210,16 @@ function Fight({ c, run }: { c: Character; run: Run }) {
             {t('pack.eat')}: {t(`res.${id}`)} ({c.pack.res[id]})
           </button>
         ))}
+        {tameable && (
+          <button class="btn" disabled={busy || !canControl(c, tameable.kind)} onClick={() => fightAction({ type: 'tame' })}>
+            {t('fight.tame', { foe: t(`mon.${tameable.kind}`), p: Math.round(tameChance(c, tameable.kind) * 100) })}
+          </button>
+        )}
+        {c.pets.some((p) => !p.dead && p.hp < petMaxHp(p)) && (
+          <button class="btn" disabled={busy || !(c.pack.res.bandage ?? 0)} onClick={() => fightAction({ type: 'healPet' })}>
+            {t('fight.healPet', { n: vetHeal(c) })}
+          </button>
+        )}
         <button class="btn" disabled={busy} onClick={() => fightAction({ type: 'flee' })}>
           {t('fight.flee', { p: Math.round(fleeChance(c, cb) * 100) })}
         </button>

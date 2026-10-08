@@ -362,3 +362,4 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .slots li { display: grid; grid-template-columns: 4.5em minmax(0, 1fr) minmax(80px, 1fr) auto; gap: 8px; align-items: center; }
 @media (max-width: 520px) { .slots li { grid-template-columns: 4.5em 1fr; } }
+.allies li { opacity: 1; } .allies { border-top: 1px dotted var(--brass); padding-top: 6px; }

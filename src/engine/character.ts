@@ -67,6 +67,7 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
     areas: { mine: 1, forest: 1, coast: 1, farm: 1 },
     node: null,
     plans: {},
+    pets: [],
     equip,
     stance: 'normal',
     run: null,
