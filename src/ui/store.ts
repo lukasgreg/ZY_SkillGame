@@ -3,18 +3,22 @@ import { regen } from '../engine/character';
 import { loadLocal, saveLocal } from '../engine/save';
 import { isPowerHour } from '../engine/skills';
 import { activeChar, log, newGameState, type GameState } from '../engine/state';
+import { defaultRng } from '../engine/rng';
+import { tickWanderers } from '../engine/wanderers';
 import { detectLang, setLang } from '../i18n';
 
 /** UI-only state that is never saved (an action in progress, flashes). */
 export interface Transient {
-  busy: null | { kind: 'mine' | 'search' | 'travel'; start: number; dur: number };
+  busy: null | { kind: 'mine' | 'search' | 'travel' | 'smelt' | 'craft' | 'repair'; start: number; dur: number; label?: string };
+  /** Repeats left in a craft/smelt batch; set to 0 to stop after the current one. */
+  queue: number;
   /** Last skill gain, for the floating "+0.1" flash. */
   flash: null | { text: string; id: number };
 }
 
 let state: GameState = loadLocal() ?? newGameState(detectLang());
 setLang(state.settings.lang);
-export const transient: Transient = { busy: null, flash: null };
+export const transient: Transient = { busy: null, queue: 0, flash: null };
 
 const listeners = new Set<() => void>();
 let saveTimer: number | undefined;
@@ -71,6 +75,7 @@ export function startClock(): void {
     const c = activeChar(state);
     if (!c) return;
     regen(c, Date.now());
+    if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
     const ph = isPowerHour();
     if (ph && !wasPowerHour) log(state, 'log.powerhour', undefined, 'sys');
     wasPowerHour = ph;

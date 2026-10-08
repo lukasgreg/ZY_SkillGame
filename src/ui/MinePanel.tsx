@@ -3,21 +3,21 @@ import { MINE_LEVELS, type ResourceId } from '../data/resources';
 import { toolInHand } from '../engine/character';
 import { canMine, levelUnlocked, pullChance } from '../engine/mining';
 import type { Character, GameState } from '../engine/state';
-import { num, t } from '../i18n';
+import { nameOf, num, t } from '../i18n';
 import { hold, mine, searchVein, setMineLevel, travel } from './actions';
 import { Card, Durability, JournalLines } from './common';
 import { Pack } from './Pack';
 import { transient } from './store';
 
 /** Fleck colour for each resource in the vein engraving. */
-export const RES_COLOR: Record<ResourceId, string> = {
+export const RES_COLOR: Partial<Record<ResourceId, string>> = {
   ironOre: '#8a5a3c', copperOre: '#c4703a', silverOre: '#b9c0c8', goldOre: '#d8a93a', mithrilOre: '#7fb6d6',
   clay: '#a7714a', stone: '#8d8a83', coal: '#2b2724', sandstone: '#d1b27a', marble: '#e8e2d6',
   obsidian: '#3b3346', sulfur: '#d9cf4a', roughGem: '#5fb08a',
 };
 
 function VeinArt({ res }: { res: ResourceId | null }) {
-  const fleck = res ? RES_COLOR[res] : 'transparent';
+  const fleck = (res && RES_COLOR[res]) || "transparent";
   const pts = [[38, 52], [52, 40], [61, 58], [45, 66], [70, 46], [56, 72], [33, 40], [66, 66]];
   return (
     <svg viewBox="0 0 100 100" class="vein-art" aria-hidden="true">
@@ -132,7 +132,7 @@ export function MinePanel({ s, c }: { s: GameState; c: Character }) {
         <Card title={t('mine.tool')}>
           {tool ? (
             <div class="tool">
-              <strong>{t(`item.${tool.def}`)}</strong>
+              <strong>{nameOf(tool)}</strong>
               <Durability it={tool} />
             </div>
           ) : (
@@ -142,7 +142,7 @@ export function MinePanel({ s, c }: { s: GameState; c: Character }) {
             .filter((i) => i.uid !== c.tool && ITEMS[i.def].toolFor === 'mining')
             .map((i) => (
               <div class="tool alt" key={i.uid}>
-                <span>{t(`item.${i.def}`)}</span>
+                <span>{nameOf(i)}</span>
                 <Durability it={i} />
                 <button class="btn btn-small" disabled={!!busy} onClick={() => hold(i.uid)}>
                   {t('pack.hold')}

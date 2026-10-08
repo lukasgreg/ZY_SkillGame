@@ -1,14 +1,15 @@
-import { ITEMS, type ItemDefId } from '../data/items';
+import { ITEMS, METALS, type ItemDefId } from '../data/items';
 import { type ResourceId } from '../data/resources';
 import type { Character, GameState } from '../engine/state';
-import { depositGold, npcRepairCost, sellPrice, withdraw, withdrawGold } from '../engine/town';
-import { num, t } from '../i18n';
-import { bankAll, buy, repair, sell, travel } from './actions';
+import { buyResPrice, depositGold, npcRepairCost, sellPrice, withdraw, withdrawGold } from '../engine/town';
+import { matchingItems, smithBuyPrice, wandererPays } from '../engine/wanderers';
+import { itemName, nameOf, num, t } from '../i18n';
+import { bankAll, buy, buyResource, repair, sell, sellToSmith, sellWanderer, travel } from './actions';
 import { Card, Durability } from './common';
 import { Pack } from './Pack';
 import { transient, update } from './store';
 
-const SHOP: ItemDefId[] = ['pickaxe', 'shovel'];
+const SHOP: ItemDefId[] = ['pickaxe', 'shovel', 'smithHammer', 'tinkerTools'];
 
 export function TownPanel({ s, c }: { s: GameState; c: Character }) {
   const busy = transient.busy;
@@ -27,9 +28,54 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
   const banked = Object.entries(s.bank.res) as [ResourceId, number][];
   const damaged = c.pack.items.filter((i) => i.dur < i.maxDur);
 
+  const now = Date.now();
+  const crafted = c.pack.items.filter((i) => ITEMS[i.def].kind !== 'tool' || i.uid !== c.tool);
+
   return (
     <div class="grid-2">
       <div class="stack">
+        <Card title={t('town.wanderers')} note={t('town.wanderersNote')}>
+          <p class="small muted">{t('town.reputation', { n: s.reputation })}</p>
+          {s.wanderers.length === 0 ? (
+            <p class="muted">{t('town.noWanderers')}</p>
+          ) : (
+            <ul class="wanderers">
+              {s.wanderers.map((w) => {
+                const fits = matchingItems(c, w);
+                return (
+                  <li key={w.id}>
+                    <div>
+                      {t('town.wants', { name: w.name, kind: t(`wanderer.${w.kind}`), item: '' })}
+                      <strong>{itemName(w.wants)}</strong>
+                    </div>
+                    <div class="req small">
+                      {w.minMat && <span>{t('town.reqMetal', { metal: t(`res.${METALS[w.minMat].bar}`) })}</span>}
+                      {w.exceptional && <span>{t('town.reqExc')}</span>}
+                      <span>{t('town.reqCond')}</span>
+                    </div>
+                    <div class="wanderer-foot">
+                      <b>{t('town.offer', { gold: w.offer })}</b>
+                      <span class="muted small">{t('town.leaves', { min: Math.max(1, Math.round((w.leavesAt - now) / 60000)) })}</span>
+                    </div>
+                    {fits.length === 0 ? (
+                      <p class="muted small">{t('town.noMatch')}</p>
+                    ) : (
+                      fits.map((it) => (
+                        <div class="row tight" key={it.uid}>
+                          <span class="small">{nameOf(it)}</span>
+                          <button class="btn btn-small btn-primary" onClick={() => sellWanderer(w, it)}>
+                            {t('town.smithBuy', { p: wandererPays(w, it) })}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+
         <Card title={t('town.trader')} note={t('town.traderNote')}>
           {sellable.length === 0 ? (
             <p class="muted">{t('town.nothingToSell')}</p>
@@ -62,7 +108,7 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
             <tbody>
               {SHOP.map((id) => (
                 <tr key={id}>
-                  <th>{t(`item.${id}`)}</th>
+                  <th>{itemName(id)}</th>
                   <td class="muted">
                     {ITEMS[id].maxDur} · ×{num(1 / ITEMS[id].speed, 2)}
                   </td>
@@ -73,6 +119,15 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
                   </td>
                 </tr>
               ))}
+              <tr>
+                <th>{t('res.log')}</th>
+                <td />
+                <td class="actions">
+                  <button class="btn btn-small" disabled={c.gold < buyResPrice('log') * 5} onClick={() => buyResource('log', 5)}>
+                    {t('town.buyN', { n: 5, p: buyResPrice('log') * 5 })}
+                  </button>
+                </td>
+              </tr>
             </tbody>
           </table>
         </Card>
@@ -83,7 +138,7 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
           ) : (
             damaged.map((i) => (
               <div class="tool alt" key={i.uid}>
-                <span>{t(`item.${i.def}`)}</span>
+                <span>{nameOf(i)}</span>
                 <Durability it={i} />
                 {i.maxDur <= 6 ? (
                   <span class="muted small">{t('town.cantRepair')}</span>
@@ -94,6 +149,20 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
                 )}
               </div>
             ))
+          )}
+          {crafted.length > 0 && (
+            <>
+              <p class="card-note">{t('town.smithBuys')}</p>
+              {crafted.map((i) => (
+                <div class="tool alt" key={`b${i.uid}`}>
+                  <span>{nameOf(i)}</span>
+                  <Durability it={i} />
+                  <button class="btn btn-small" onClick={() => sellToSmith(i)}>
+                    {t('town.smithBuy', { p: smithBuyPrice(i) })}
+                  </button>
+                </div>
+              ))}
+            </>
           )}
         </Card>
       </div>

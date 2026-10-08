@@ -7,7 +7,9 @@ export function serialize(s: GameState): string {
 }
 
 /** Migrations by version. Add one entry per bump of SAVE_VERSION. */
-const MIGRATIONS: Record<number, (s: any) => any> = {};
+const MIGRATIONS: Record<number, (s: any) => any> = {
+  1: (s) => ({ ...s, version: 2, wanderers: [], nextWandererAt: Date.now() + 20_000, reputation: 0 }),
+};
 
 export function deserialize(json: string): GameState {
   let s = JSON.parse(json);

@@ -49,7 +49,7 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
     hp: 0,
     stamina: 0,
     gold: PROFESSIONS[prof].startGold,
-    pack: { res: {}, items: [pick] },
+    pack: { res: {}, items: prof === 'craftsman' ? [pick, makeItem(s, 'smithHammer'), makeItem(s, 'tinkerTools')] : [pick] },
     location: 'town',
     mineLevel: 1,
     vein: null,

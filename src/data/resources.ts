@@ -1,6 +1,8 @@
 export const RESOURCE_IDS = [
   'ironOre', 'copperOre', 'silverOre', 'goldOre', 'mithrilOre',
   'clay', 'stone', 'coal', 'sandstone', 'marble', 'obsidian', 'sulfur', 'roughGem',
+  'ironBar', 'steelBar', 'copperBar', 'silverBar', 'goldBar', 'mithrilBar',
+  'log',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -31,6 +33,25 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   obsidian: r('obsidian', 1, 14, 0.8),
   sulfur: r('sulfur', 0.5, 8, 0.5),
   roughGem: r('roughGem', 0.1, 45, 1.5),
+  ironBar: r('ironBar', 0.5, 5, 0),
+  steelBar: r('steelBar', 0.5, 12, 0.4),
+  copperBar: r('copperBar', 0.5, 11, 0.3),
+  silverBar: r('silverBar', 0.5, 20, 0.6),
+  goldBar: r('goldBar', 0.5, 36, 1),
+  mithrilBar: r('mithrilBar', 0.5, 105, 2),
+  log: r('log', 2, 2, 0),
+};
+
+/**
+ * Smelting at the forge uses the Mining skill. Two ore make one bar; a failure wastes one ore.
+ * Ranges loosely follow Andaria's smelting table.
+ */
+export const SMELTING: Partial<Record<ResourceId, { bar: ResourceId; min: number; max: number }>> = {
+  ironOre: { bar: 'ironBar', min: 0, max: 40 },
+  copperOre: { bar: 'copperBar', min: 25, max: 60 },
+  silverOre: { bar: 'silverBar', min: 40, max: 75 },
+  goldOre: { bar: 'goldBar', min: 55, max: 90 },
+  mithrilOre: { bar: 'mithrilBar', min: 75, max: 100 },
 };
 
 /**
@@ -44,7 +65,7 @@ export interface MiningYield {
   perPull: number;
 }
 
-export const MINING_YIELDS: Record<ResourceId, MiningYield> = {
+export const MINING_YIELDS: Partial<Record<ResourceId, MiningYield>> = {
   ironOre: { res: 'ironOre', min: 0, best: 30, perPull: 3 },
   copperOre: { res: 'copperOre', min: 30, best: 60, perPull: 3 },
   silverOre: { res: 'silverOre', min: 45, best: 75, perPull: 2 },

@@ -264,3 +264,34 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .choice-opt input { grid-row: span 2; width: auto; margin-top: 6px; accent-color: var(--umber); }
 .choice-opt span { font-size: 15px; color: var(--ink-soft); }
 .choice-opt.on { background: #f3e8cc; border-color: var(--frame); }
+
+/* ---------- forge ---------- */
+.row.tight { margin-top: 0; justify-content: space-between; }
+.metals { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 4px; }
+.metal { background: none; border: 1px solid var(--brass); color: var(--ink); font-size: 14px; padding: 2px 8px; }
+.metal.on { background: var(--umber); color: #f4e7c6; border-color: var(--ink); }
+.metal.on .muted { color: #d9c9a3; }
+.recipes { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 0; }
+.recipe { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px dotted var(--brass); }
+.recipe.off { opacity: 0.55; }
+.recipe-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.recipe-needs { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.recipe-needs .short { color: var(--rust); }
+.recipe-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: center; }
+.recipe-btns { display: flex; gap: 4px; }
+.workbar { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; }
+.workbar-track { flex: 1; height: 6px; background: #c8b48b; }
+.workbar-track span { display: block; height: 100%; width: 0; background: var(--umber); animation: work-fill linear forwards; }
+@keyframes work-fill { to { width: 100%; } }
+
+/* ---------- wanderers ---------- */
+.wanderers { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.wanderers li { border: 1px solid var(--brass); padding: 8px 10px; display: grid; gap: 4px; background: #f3e8cc80; }
+.req { display: flex; flex-wrap: wrap; gap: 4px; }
+.req span { border: 1px solid var(--brass); padding: 0 6px; color: var(--ink-soft); }
+.wanderer-foot { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.card .chip { background: none; color: var(--ink); border-color: var(--brass); }
+.card .chip b { color: var(--umber); }
+.card .chip span { color: var(--ink-soft); }
+.card .chip.on { background: var(--umber); border-color: var(--ink); }
+.card .chip.on b, .card .chip.on span { color: #f4e7c6; }

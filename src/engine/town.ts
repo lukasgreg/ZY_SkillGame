@@ -39,8 +39,21 @@ export function buyItem(s: GameState, c: Character, def: ItemDefId): ItemInstanc
   c.gold -= price;
   const it = makeItem(s, def);
   c.pack.items.push(it);
-  if (c.tool === null && ITEMS[def].kind === 'tool') c.tool = it.uid;
+  if (c.tool === null && ITEMS[def].toolFor === 'mining') c.tool = it.uid;
   return it;
+}
+
+/** Provisioner price for raw goods (logs until Lumberjacking arrives). */
+export function buyResPrice(id: ResourceId): number {
+  return Math.ceil(RESOURCES[id].price * 1.5);
+}
+
+export function buyRes(c: Character, id: ResourceId, n: number): boolean {
+  const cost = buyResPrice(id) * n;
+  if (c.gold < cost) return false;
+  c.gold -= cost;
+  addRes(c.pack, id, n);
+  return true;
 }
 
 /** NPC smith repair: costs gold, restores durability, but lowers max by 5 (worse than a player repair). */

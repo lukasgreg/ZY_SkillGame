@@ -1,9 +1,9 @@
-import type { ItemDefId } from '../data/items';
+import type { ItemDefId, MetalId } from '../data/items';
 import type { ProfessionId, RaceId } from '../data/professions';
 import type { MineLevelId, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | 'mine';
@@ -14,6 +14,8 @@ export interface ItemInstance {
   dur: number;
   maxDur: number;
   quality: 'normal' | 'exceptional';
+  /** Metal for items made from bars. */
+  mat?: MetalId;
 }
 
 export interface Inventory {
@@ -64,6 +66,19 @@ export interface MarketEntry {
   t: number;
 }
 
+/** An NPC warrior or ranger visiting the shop with a request. */
+export interface Wanderer {
+  id: number;
+  name: string;
+  kind: 'warrior' | 'ranger';
+  wants: ItemDefId;
+  /** Lowest acceptable metal, or null for any. */
+  minMat: MetalId | null;
+  exceptional: boolean;
+  offer: number;
+  leavesAt: number;
+}
+
 export interface GameState {
   version: number;
   chars: Character[];
@@ -73,6 +88,10 @@ export interface GameState {
   journal: LogEntry[];
   market: Partial<Record<ResourceId, MarketEntry>>;
   settings: { lang: 'en' | 'cs' };
+  wanderers: Wanderer[];
+  nextWandererAt: number;
+  /** Items sold to wanderers; unlocks better customers. */
+  reputation: number;
   uidSeq: number;
   lastSeen: number;
 }
@@ -86,6 +105,9 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     journal: [],
     market: {},
     settings: { lang },
+    wanderers: [],
+    nextWandererAt: Date.now() + 20_000,
+    reputation: 0,
     uidSeq: 1,
     lastSeen: Date.now(),
   };

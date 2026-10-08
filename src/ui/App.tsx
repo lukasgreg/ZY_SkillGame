@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import { CharacterPanel } from './CharacterPanel';
 import { Card, JournalLines } from './common';
 import { Create } from './Create';
+import { ForgePanel } from './ForgePanel';
 import { Header } from './Header';
 import { MinePanel } from './MinePanel';
 import { SettingsPanel } from './SettingsPanel';
@@ -11,7 +12,7 @@ import { SkillsPanel } from './SkillsPanel';
 import { TownPanel } from './TownPanel';
 import { useGame } from './store';
 
-const TABS = ['mine', 'town', 'skills', 'character', 'journal', 'settings'] as const;
+const TABS = ['mine', 'town', 'forge', 'skills', 'character', 'journal', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 function readTab(): Tab {
@@ -54,6 +55,7 @@ export function App() {
       </nav>
       {tab === 'mine' && <MinePanel s={s} c={c} />}
       {tab === 'town' && <TownPanel s={s} c={c} />}
+      {tab === 'forge' && <ForgePanel c={c} />}
       {tab === 'skills' && <SkillsPanel c={c} />}
       {tab === 'character' && <CharacterPanel c={c} />}
       {tab === 'journal' && (

@@ -2,7 +2,7 @@ import { RESOURCES, type ResourceId } from '../data/resources';
 import { packWeight } from '../engine/character';
 import { maxWeight } from '../engine/skills';
 import type { Character } from '../engine/state';
-import { num, t } from '../i18n';
+import { nameOf, num, t } from '../i18n';
 import { Card } from './common';
 
 export function Pack({ c }: { c: Character }) {
@@ -21,7 +21,7 @@ export function Pack({ c }: { c: Character }) {
           ))}
           {c.pack.items.map((i) => (
             <li key={i.uid}>
-              {t(`item.${i.def}`)}
+              {nameOf(i)}
               {i.uid === c.tool && <span class="muted small"> · {t('pack.inHand')}</span>}
             </li>
           ))}

@@ -23,12 +23,12 @@ export function canMine(c: Character): MineBlock | null {
 
 /** Skill (whole points) needed to work a resource. */
 export function mineMin(res: ResourceId): number {
-  return MINING_YIELDS[res].min;
+  return MINING_YIELDS[res]!.min;
 }
 
 /** Success chance for one pull: 30% at the minimum skill rising to 95% at the "best yield" skill. */
 export function pullChance(skill: number, res: ResourceId): number {
-  const y = MINING_YIELDS[res];
+  const y = MINING_YIELDS[res]!;
   if (skill < y.min) return 0;
   const k = clamp((skill - y.min) / (Math.min(y.best, 100) - y.min || 1), 0, 1);
   return 0.3 + 0.65 * k;
@@ -70,7 +70,7 @@ export interface PullResult {
 /** Resolves one pull at the current vein. Caller must check canMine first. */
 export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult {
   const vein = c.vein!;
-  const y = MINING_YIELDS[vein.res];
+  const y = MINING_YIELDS[vein.res]!;
   const skill = c.skills.mining / 10;
   const p = pullChance(skill, vein.res);
   const ok = rng() < p;
