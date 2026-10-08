@@ -305,3 +305,15 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .node-art .ripple { fill: none; stroke: #d9e2dc; stroke-width: 1.2; }
 .node-art .soil { fill: #8a6a44; stroke: var(--ink); stroke-width: 1.6; }
 .node-art .furrow { fill: none; stroke: #5d4428; stroke-width: 1.4; }
+
+/* ---------- workers ---------- */
+.workers { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.worker { border: 1px solid var(--brass); padding: 8px 10px; display: grid; gap: 6px; background: #f3e8cc80; }
+.worker-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.pill { font-family: var(--display); font-size: 11px; letter-spacing: 0.08em; padding: 0 8px; border: 1px solid currentColor; }
+.pill-working { color: var(--moss); }
+.pill-noTool, .pill-unpaid { color: var(--rust); }
+.pill-nothing { color: var(--ink-soft); }
+.small-chips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.small-chips .chip { padding: 3px 6px; }
+.small-chips .chip b { font-size: 11px; letter-spacing: 0.02em; }

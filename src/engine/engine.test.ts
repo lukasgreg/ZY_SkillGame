@@ -270,3 +270,67 @@ describe('wanderers', () => {
     expect(s.wanderers.every((x) => x.leavesAt > now + 3_600_000)).toBe(true);
   });
 });
+
+import { buildBunkhouse, catchUp, giveTool, hire, hireCost, OFFLINE_CAP_MS, slots, train, workerCap } from './workers';
+
+describe('workers', () => {
+  it('hiring gets more expensive and is limited by slots', () => {
+    const { s } = setup();
+    s.bank.gold = 10_000;
+    const c1 = hireCost(s);
+    expect(hire(s, 'mine', () => 0.5)).not.toBe(null);
+    expect(hireCost(s)).toBeGreaterThan(c1);
+    hire(s, 'forest', () => 0.5);
+    expect(s.workers.length).toBe(slots(s));
+    expect(hire(s, 'coast', () => 0.5)).toBe(null);
+  });
+
+  it('worker skill is capped at the best character skill minus 10', () => {
+    const { s, c } = setup();
+    s.bank.gold = 100_000;
+    c.skills.mining = 250;
+    const w = hire(s, 'mine', () => 0.5)!;
+    expect(workerCap(s, 'mine')).toBe(150);
+    while (train(s, w));
+    expect(w.skill).toBe(150);
+  });
+
+  it('works offline up to the cap, delivers to the bank, wears the tool and draws wages', () => {
+    const { s, c, rng } = setup();
+    s.bank.gold = 1000;
+    c.skills.mining = 400;
+    const w = hire(s, 'mine', rng)!;
+    const gold = s.bank.gold;
+    const pick = c.pack.items.find((i) => i.def === 'pickaxe')!;
+    expect(giveTool(c, w, pick)).toBe(true);
+    w.toolDur = 1000;
+    s.workersAt = Date.now() - 24 * 3600_000;
+    const r = catchUp(s, Date.now(), rng);
+    expect(r.ms).toBe(OFFLINE_CAP_MS);
+    expect(Object.values(s.bank.res).reduce((a, b) => a + (b ?? 0), 0)).toBeGreaterThan(50);
+    expect(w.toolDur).toBeLessThan(1000 - 30);
+    expect(w.toolDur).toBeGreaterThan(1000 - 120);
+    expect(s.bank.gold).toBeLessThan(gold);
+  });
+
+  it('stops without a tool or wages', () => {
+    const { s, c, rng } = setup();
+    s.bank.gold = 200;
+    c.skills.mining = 300;
+    const w = hire(s, 'mine', rng)!;
+    w.toolDur = 3;
+    s.workersAt = Date.now() - 6 * 3600_000;
+    catchUp(s, Date.now(), rng);
+    expect(w.toolDur).toBe(0);
+  });
+
+  it('bunkhouse needs carpentry, oak and gold, and adds a slot', () => {
+    const { s, c } = setup();
+    c.skills.carpentry = 200;
+    c.gold = 1000;
+    c.pack.res.oakLog = 15;
+    expect(buildBunkhouse(s, c)).toBe(true);
+    expect(slots(s)).toBe(3);
+    expect(c.pack.res.oakLog).toBeUndefined();
+  });
+});

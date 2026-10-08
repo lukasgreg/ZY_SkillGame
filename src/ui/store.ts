@@ -5,6 +5,8 @@ import { isPowerHour } from '../engine/skills';
 import { activeChar, log, newGameState, type GameState } from '../engine/state';
 import { defaultRng } from '../engine/rng';
 import { tickWanderers } from '../engine/wanderers';
+import { catchUp } from '../engine/workers';
+import type { ResourceId } from '../data/resources';
 import { detectLang, setLang } from '../i18n';
 
 /** UI-only state that is never saved (an action in progress, flashes). */
@@ -18,6 +20,16 @@ export interface Transient {
 
 let state: GameState = loadLocal() ?? newGameState(detectLang());
 setLang(state.settings.lang);
+reportAway(state);
+
+/** Simulates workers for the time the game was closed and writes a journal summary. */
+function reportAway(s: GameState): void {
+  const { ms, got } = catchUp(s, Date.now(), defaultRng);
+  const entries = Object.entries(got) as [ResourceId, number][];
+  if (ms < 120_000 || entries.length === 0) return;
+  log(s, 'log.workers.away', { h: `#${Math.round((ms / 3600_000) * 10) / 10}` }, 'sys');
+  for (const [id, n] of entries) log(s, 'log.workers.got', { n, res: `@res.${id}` }, 'good');
+}
 export const transient: Transient = { busy: null, queue: 0, flash: null };
 
 const listeners = new Set<() => void>();
@@ -50,6 +62,7 @@ export function touch(): void {
 
 export function replaceState(s: GameState): void {
   state = s;
+  reportAway(state);
   setLang(s.settings.lang);
   emit();
   saveLocal(state);
@@ -76,6 +89,10 @@ export function startClock(): void {
     if (!c) return;
     regen(c, Date.now());
     if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
+    if (state.workers.length) {
+      catchUp(state, Date.now(), defaultRng);
+      scheduleSave();
+    } else state.workersAt = Date.now();
     const ph = isPowerHour();
     if (ph && !wasPowerHour) log(state, 'log.powerhour', undefined, 'sys');
     wasPowerHour = ph;

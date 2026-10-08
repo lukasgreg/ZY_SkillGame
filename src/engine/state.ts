@@ -3,7 +3,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc;
@@ -83,6 +83,23 @@ export interface Wanderer {
   leavesAt: number;
 }
 
+/** A hired gatherer who works for the bank while you play or are away. */
+export interface Worker {
+  id: number;
+  name: string;
+  job: GatherLoc;
+  /** Integer tenths, capped at your best skill in the job minus 10. */
+  skill: number;
+  area: AreaId;
+  toolDur: number;
+  toolMax: number;
+  /** Milliseconds accumulated toward the next attempt. */
+  acc: number;
+  /** Wage owed but not yet paid (fractions of a gold piece). */
+  owed: number;
+  produced: Partial<Record<ResourceId, number>>;
+}
+
 export interface GameState {
   version: number;
   chars: Character[];
@@ -96,6 +113,12 @@ export interface GameState {
   nextWandererAt: number;
   /** Items sold to wanderers; unlocks better customers. */
   reputation: number;
+  workers: Worker[];
+  /** Total hires so far; each one costs more. */
+  hires: number;
+  bunkhouse: number;
+  /** When workers were last simulated. */
+  workersAt: number;
   uidSeq: number;
   lastSeen: number;
 }
@@ -112,6 +135,10 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     wanderers: [],
     nextWandererAt: Date.now() + 20_000,
     reputation: 0,
+    workers: [],
+    hires: 0,
+    bunkhouse: 0,
+    workersAt: Date.now(),
     uidSeq: 1,
     lastSeen: Date.now(),
   };

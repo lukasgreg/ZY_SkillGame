@@ -11,8 +11,9 @@ import { SettingsPanel } from './SettingsPanel';
 import { SkillsPanel } from './SkillsPanel';
 import { TownPanel } from './TownPanel';
 import { useGame } from './store';
+import { WorkersPanel } from './WorkersPanel';
 
-const TABS = ['gather', 'town', 'forge', 'skills', 'character', 'journal', 'settings'] as const;
+const TABS = ['gather', 'town', 'forge', 'workers', 'skills', 'character', 'journal', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 function readTab(): Tab {
@@ -56,6 +57,7 @@ export function App() {
       {tab === 'gather' && <GatherPanel s={s} c={c} />}
       {tab === 'town' && <TownPanel s={s} c={c} />}
       {tab === 'forge' && <ForgePanel c={c} />}
+      {tab === 'workers' && <WorkersPanel s={s} c={c} />}
       {tab === 'skills' && <SkillsPanel c={c} />}
       {tab === 'character' && <CharacterPanel c={c} />}
       {tab === 'journal' && (
