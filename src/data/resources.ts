@@ -13,7 +13,9 @@ export const RESOURCE_IDS = [
   // farming
   'wheat', 'feather', 'flax', 'herb', 'bloodmoss',
   // crafted goods
-  'arrow', 'bread', 'cookedFish', 'fishPie', 'herbalStew', 'smokedSturgeon',
+  'arrow', 'bread', 'cookedFish', 'fishPie', 'herbalStew', 'smokedSturgeon', 'foundersFeast', 'fortifyingPowder',
+  // rare: contract rewards and finds
+  'etherealOre', 'ancientWood', 'dragonScale', 'planFragment',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -79,6 +81,13 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   fishPie: r('fishPie', 0.6, 10, 0.3, { stamina: 25, hp: 10 }),
   herbalStew: r('herbalStew', 0.8, 18, 0.6, { stamina: 35, hp: 25 }),
   smokedSturgeon: r('smokedSturgeon', 1, 30, 1, { stamina: 50, hp: 20 }),
+  foundersFeast: r('foundersFeast', 1, 90, 2, { stamina: 100, hp: 80 }),
+  fortifyingPowder: r('fortifyingPowder', 0.1, 40, 2),
+
+  etherealOre: r('etherealOre', 1, 80, 3),
+  ancientWood: r('ancientWood', 2, 70, 3),
+  dragonScale: r('dragonScale', 0.5, 150, 3),
+  planFragment: r('planFragment', 0, 15, 2),
 };
 
 /**

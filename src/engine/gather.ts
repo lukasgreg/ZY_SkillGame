@@ -1,4 +1,5 @@
 import { ITEMS, durState } from '../data/items';
+import { FRAGMENT_CHANCE } from '../data/plans';
 import { AREAS, GATHER_LOCS, GATHER_SKILL, RESOURCES, YIELDS, type AreaId, type GatherLoc, type ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 import { addRes, packWeight } from './character';
@@ -90,6 +91,8 @@ export interface PullResult {
   toolBroke: boolean;
   toolWarn: boolean;
   nodeEmpty: boolean;
+  /** Found a plan fragment (rare). */
+  fragment: boolean;
 }
 
 /** Resolves one pull at the current node. Caller must check canGather first. */
@@ -108,6 +111,8 @@ export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult
     addRes(c.pack, node.res, amount);
     node.left -= 1;
   }
+  const fragment = ok && rng() < FRAGMENT_CHANCE;
+  if (fragment) addRes(c.pack, 'planFragment', 1);
   c.stamina = Math.max(0, c.stamina - STAMINA_PER_PULL);
 
   const gain = trySkillGain(c, skillId, p, ok, rng, {
@@ -122,5 +127,5 @@ export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult
   const toolBroke = wear(c, tool);
   const toolWarn = !toolBroke && tool.dur === Math.ceil(tool.maxDur * 0.1);
 
-  return { ok, skill: skillId, res: node.res, amount, gain, stat, tool, toolBroke, toolWarn, nodeEmpty: node.left <= 0 };
+  return { ok, skill: skillId, res: node.res, amount, gain, stat, tool, toolBroke, toolWarn, nodeEmpty: node.left <= 0, fragment };
 }

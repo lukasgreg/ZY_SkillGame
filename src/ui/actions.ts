@@ -1,5 +1,7 @@
 import { ITEMS, type ItemDefId, type MetalId } from '../data/items';
 import type { Recipe } from '../data/recipes';
+import { PLANS, type PlanId } from '../data/plans';
+import { abandon, accept, combineFragments, craftPlan, fortify, handIn } from '../engine/contracts';
 import type { SkillId } from '../data/skills';
 import { canCraft, craft, repair as playerRepair, repairInfo, smelt, smeltChance } from '../engine/craft';
 import { deliverGoods, sellToWanderer, smithBuyPrice, wandererPays } from '../engine/wanderers';
@@ -7,7 +9,7 @@ import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import { eat } from '../engine/character';
 import { canGather, findNode, isGatherLoc, pull, swingTime } from '../engine/gather';
 import { defaultRng } from '../engine/rng';
-import { activeChar, log, type Character, type GameState, type ItemInstance, type Location, type Wanderer } from '../engine/state';
+import { activeChar, log, type Character, type Contract, type GameState, type ItemInstance, type Location, type Wanderer } from '../engine/state';
 import { buyItem, buyRes, buyResPrice, depositAll, npcRepair, npcRepairCost, sellRes } from '../engine/town';
 import { itemParam, skillNum, t } from '../i18n';
 import { getState, touch, transient, update } from './store';
@@ -62,6 +64,7 @@ export function gather(): void {
       if (r.toolWarn) log(s, 'log.tool.warn', { item: itemParam(r.tool) }, 'bad');
       if (r.toolBroke) log(s, 'log.tool.broke', { item: itemParam(r.tool) }, 'bad');
       if (r.nodeEmpty) log(s, `log.node.empty.${loc}`, undefined, 'sys');
+      if (r.fragment) log(s, 'log.fragment', undefined, 'gain');
     }),
   );
 }
@@ -194,14 +197,14 @@ export function smeltOre(ore: ResourceId, n: number): void {
   });
 }
 
-export function craftItem(r: Recipe, metal: MetalId | null, n: number): void {
+export function craftItem(r: Recipe, metal: MetalId | null, n: number, runic = false): void {
   const c = activeChar(getState());
   if (!c || c.location !== 'town' || canCraft(c, r, metal)) return;
   repeat('craft', n, () => workTime(c), () => {
     let more = false;
     withChar((s, c) => {
       if (canCraft(c, r, metal)) return;
-      const res = craft(s, c, r, metal, rng);
+      const res = craft(s, c, r, metal, rng, new Date(), runic);
       if (res.item) log(s, res.item.quality === 'exceptional' ? 'log.craft.exc' : 'log.craft.ok', { item: itemParam(res.item) }, res.item.quality === 'exceptional' ? 'gain' : undefined);
       else if (res.res) log(s, 'log.craft.res', { n: res.res.n, res: `@res.${res.res.id}` });
       else log(s, 'log.craft.fail', undefined, 'bad');
@@ -254,5 +257,61 @@ export function sellToSmith(it: ItemInstance): void {
 export function buyResource(id: ResourceId, n: number): void {
   withChar((s, c) => {
     if (buyRes(c, id, n)) log(s, 'log.boughtRes', { n, res: `@res.${id}`, gold: buyResPrice(id) * n }, 'good');
+  });
+}
+
+export function acceptContract(k: Contract): void {
+  update((s) => {
+    const live = s.contractOffers.find((x) => x.id === k.id);
+    if (live && accept(s, live)) log(s, 'log.contract.accepted', { giver: live.giver }, 'sys');
+  });
+}
+
+export function handInContract(k: Contract): void {
+  withChar((s, c) => {
+    const live = s.contracts.find((x) => x.id === k.id);
+    if (!live) return;
+    const r = handIn(s, c, live);
+    if (r.done) {
+      log(s, 'log.contract.done', { giver: live.giver, gold: live.reward.gold }, 'gain');
+      if (live.reward.plan) log(s, 'log.contract.plan', { plan: `@plan.${live.reward.plan}` }, 'gain');
+      if (live.reward.res) log(s, 'log.contract.res', { n: live.reward.res.n, res: `@res.${live.reward.res.id}` }, 'gain');
+    } else if (r.given) log(s, 'log.contract.part', { n: r.given, left: live.n - live.delivered }, 'good');
+  });
+}
+
+export function abandonContract(k: Contract): void {
+  update((s) => {
+    const live = s.contracts.find((x) => x.id === k.id);
+    if (live) abandon(s, live);
+  });
+}
+
+export function combine(): void {
+  withChar((s, c) => {
+    const id = combineFragments(c, rng);
+    if (id) log(s, 'log.plan.combined', { plan: `@plan.${id}` }, 'gain');
+  });
+}
+
+export function craftFromPlan(id: PlanId): void {
+  const c = activeChar(getState());
+  if (!c || transient.busy || c.location !== 'town') return;
+  timed('craft', workTime(c) * 1.5, () =>
+    withChar((s, c) => {
+      const r = craftPlan(s, c, id, rng);
+      if (!r) return;
+      if (r.item) log(s, 'log.plan.made', { item: itemParam(r.item) }, 'gain');
+      else if (r.res) log(s, 'log.craft.res', { n: r.res.n, res: `@res.${r.res.id}` }, 'gain');
+      else log(s, 'log.plan.failed', { plan: `@plan.${id}` }, 'bad');
+      noteGains(s, c, PLANS[id].skill, r.gain, r.stat);
+    }),
+  );
+}
+
+export function fortifyItem(it: ItemInstance): void {
+  withChar((s, c) => {
+    const live = c.pack.items.find((i) => i.uid === it.uid);
+    if (live && fortify(c, live)) log(s, 'log.fortified', { item: itemParam(live) }, 'good');
   });
 }

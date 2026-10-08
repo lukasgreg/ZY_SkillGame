@@ -105,8 +105,13 @@ export interface CraftResult extends Outcome {
   lost: [ResourceId, number][];
 }
 
+/** Runic crafting works only for blacksmithing items and needs a runic hammer with a charge left. */
+export function canRunic(c: Character, r: Recipe): boolean {
+  return r.skill === 'blacksmithing' && 'item' in r.out && !!findTool(c, 'runicHammer');
+}
+
 /** One crafting attempt. Caller checks canCraft first. A failure loses about half the materials. */
-export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | null, rng: Rng, now = new Date()): CraftResult {
+export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | null, rng: Rng, now = new Date(), runic = false): CraftResult {
   const [min, max] = recipeRange(r, metal);
   const skill = c.skills[r.skill] / 10;
   const p = craftChance(skill, min, max);
@@ -120,6 +125,12 @@ export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | nu
     for (const [id, n] of inputs) addRes(c.pack, id, -n);
     if ('item' in r.out) {
       item = makeCrafted(s, r.out.item, metal, rng() < exceptionalChance(c, r, metal));
+      if (runic && canRunic(c, r)) {
+        item.runic = true;
+        item.maxDur = Math.round(item.maxDur * 1.5);
+        item.dur = item.maxDur;
+        wear(c, findTool(c, 'runicHammer')!);
+      }
       c.pack.items.push(item);
     } else {
       addRes(c.pack, r.out.res, r.out.n);
@@ -133,7 +144,7 @@ export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | nu
     }
   }
 
-  const rarity = (metal ? METALS[metal].rarity : 0) + (item?.quality === 'exceptional' ? 0.5 : 0);
+  const rarity = (metal ? METALS[metal].rarity : 0) + (item?.quality === 'exceptional' ? 0.5 : 0) + (r.rarity ?? 0);
   const gain = trySkillGain(c, r.skill, p, ok, rng, { rarity, tooEasyAt: max, mult: isPowerHour(now) ? 1.5 : 1 });
   const stat = tryStatGain(c, r.skill, rng);
   const tool = findTool(c, r.tool)!;
@@ -177,7 +188,7 @@ export function repair(c: Character, it: ItemInstance, rng: Rng, now = new Date(
 export function itemValue(it: ItemInstance): number {
   const d = ITEMS[it.def];
   const metal = it.mat ? METALS[it.mat].priceMult : 1;
-  const q = it.quality === 'exceptional' ? 2.5 : 1;
+  const q = (it.quality === 'exceptional' ? 2.5 : 1) * (it.runic ? 2 : 1);
   const cond = 0.5 + 0.5 * (it.maxDur > 0 ? it.dur / it.maxDur : 0);
   return Math.max(1, Math.round(d.price * metal * q * cond));
 }

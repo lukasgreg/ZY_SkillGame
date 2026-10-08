@@ -3,10 +3,11 @@ import { METALS, METAL_IDS, type MetalId } from '../data/items';
 import { RECIPES, type Recipe } from '../data/recipes';
 import { SMELTING, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
-import { canCraft, craftChance, exceptionalChance, recipeInputs, recipeRange, repairInfo, smeltChance } from '../engine/craft';
+import { canCraft, canRunic, craftChance, exceptionalChance, findTool, recipeInputs, recipeRange, repairInfo, smeltChance } from '../engine/craft';
+import { FRAGMENTS_PER_PLAN, PLANS, PLAN_IDS } from '../data/plans';
 import type { Character } from '../engine/state';
 import { itemName, nameOf, num, t } from '../i18n';
-import { craftItem, repairOwn, smeltOre, stopQueue, travel } from './actions';
+import { combine, craftFromPlan, craftItem, fortifyItem, repairOwn, smeltOre, stopQueue, travel } from './actions';
 import { Card, Durability } from './common';
 import { Pack } from './Pack';
 import { transient } from './store';
@@ -35,7 +36,7 @@ export function WorkBar() {
   );
 }
 
-function RecipeRow({ c, r, metal }: { c: Character; r: Recipe; metal: MetalId | null }) {
+function RecipeRow({ c, r, metal, runic }: { c: Character; r: Recipe; metal: MetalId | null; runic: boolean }) {
   const busy = !!transient.busy;
   const [min, max] = recipeRange(r, metal);
   const block = canCraft(c, r, metal);
@@ -69,10 +70,10 @@ function RecipeRow({ c, r, metal }: { c: Character; r: Recipe; metal: MetalId | 
           </span>
         )}
         <span class="recipe-btns">
-          <button class="btn btn-small" disabled={busy || block !== null} onClick={() => craftItem(r, metal, 1)}>
+          <button class="btn btn-small" disabled={busy || block !== null} onClick={() => craftItem(r, metal, 1, runic && canRunic(c, r))}>
             {t('forge.craft')}
           </button>
-          <button class="btn btn-small" disabled={busy || block !== null} onClick={() => craftItem(r, metal, 5)}>
+          <button class="btn btn-small" disabled={busy || block !== null} onClick={() => craftItem(r, metal, 5, runic && canRunic(c, r))}>
             {t('forge.craftN', { n: 5 })}
           </button>
         </span>
@@ -81,9 +82,81 @@ function RecipeRow({ c, r, metal }: { c: Character; r: Recipe; metal: MetalId | 
   );
 }
 
+function PlansCard({ c }: { c: Character }) {
+  const busy = !!transient.busy;
+  const owned = PLAN_IDS.filter((id) => (c.plans[id] ?? 0) > 0);
+  const frags = c.pack.res.planFragment ?? 0;
+  const powder = c.pack.res.fortifyingPowder ?? 0;
+  if (!owned.length && !frags && !powder) return null;
+  return (
+    <Card title={t('plan.title')} note={t('plan.note')}>
+      {frags > 0 && (
+        <div class="row tight">
+          <span class="small">{t('plan.fragments', { n: frags, need: FRAGMENTS_PER_PLAN })}</span>
+          <button class="btn btn-small" disabled={frags < FRAGMENTS_PER_PLAN} onClick={combine}>
+            {t('plan.combine')}
+          </button>
+        </div>
+      )}
+      <ul class="recipes">
+        {owned.map((id) => {
+          const r = PLANS[id];
+          const block = canCraft(c, r, null);
+          const skill = c.skills[r.skill] / 10;
+          return (
+            <li key={id} class="recipe">
+              <div class="recipe-head">
+                <strong class="plan-name">
+                  {t(`plan.${id}`)} <span class="muted">×{c.plans[id]}</span>
+                </strong>
+                <span class="muted small">
+                  {t(`skill.${r.skill}`)} {r.min}–{r.max}
+                </span>
+              </div>
+              <div class="small muted">{t(`plan.${id}.desc`)}</div>
+              <div class="recipe-needs small">
+                {recipeInputs(r, null).map(([rid, n]) => (
+                  <span key={rid} class={(c.pack.res[rid] ?? 0) < n ? 'short' : ''}>
+                    {n}× {t(`res.${rid}`)} <span class="muted">({c.pack.res[rid] ?? 0})</span>
+                  </span>
+                ))}
+              </div>
+              <div class="recipe-foot">
+                <span class="small">
+                  {block ? t(`forge.block.${block}`, { tool: itemName(r.tool), skill: t(`skill.${r.skill}`), n: r.min }) : t('forge.chance', { p: pct(craftChance(skill, r.min, r.max)) })}
+                </span>
+                <button class="btn btn-small btn-primary" disabled={busy || block !== null} onClick={() => craftFromPlan(id)}>
+                  {t('forge.craft')}
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {powder > 0 && (
+        <>
+          <p class="card-note">{t('plan.fortifyNote', { n: powder })}</p>
+          {c.pack.items.map((i) => (
+            <div class="row tight" key={i.uid}>
+              <span class="small">
+                {nameOf(i)} <span class="muted">{i.dur}/{i.maxDur}</span>
+              </span>
+              <button class="btn btn-small" onClick={() => fortifyItem(i)}>
+                {t('plan.fortify')}
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+    </Card>
+  );
+}
+
 export function ForgePanel({ c }: { c: Character }) {
   const [skill, setSkill] = useState<SkillId>('blacksmithing');
   const [metal, setMetal] = useState<MetalId>('iron');
+  const [runic, setRunic] = useState(false);
+  const hammer = findTool(c, 'runicHammer');
   const busy = !!transient.busy;
 
   if (c.location !== 'town') {
@@ -122,10 +195,16 @@ export function ForgePanel({ c }: { c: Character }) {
               ))}
             </div>
           )}
+          {skill === 'blacksmithing' && hammer && (
+            <label class="runic">
+              <input type="checkbox" id="use-runic" checked={runic} onChange={(e) => setRunic((e.target as HTMLInputElement).checked)} />
+              {t('forge.useRunic', { n: hammer.dur })}
+            </label>
+          )}
           <WorkBar />
           <ul class="recipes">
             {recipes.map((r) => (
-              <RecipeRow key={r.id} c={c} r={r} metal={r.bars ? metal : null} />
+              <RecipeRow key={r.id} c={c} r={r} metal={r.bars ? metal : null} runic={runic} />
             ))}
           </ul>
         </Card>
@@ -163,6 +242,7 @@ export function ForgePanel({ c }: { c: Character }) {
           )}
         </Card>
 
+        <PlansCard c={c} />
         <Card title={t('forge.repairs')} note={t('forge.repairsNote')}>
           {damaged.length === 0 ? (
             <p class="muted">{t('forge.nothingToRepair')}</p>

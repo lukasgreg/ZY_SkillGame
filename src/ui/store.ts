@@ -6,6 +6,7 @@ import { activeChar, log, newGameState, type GameState } from '../engine/state';
 import { defaultRng } from '../engine/rng';
 import { tickWanderers } from '../engine/wanderers';
 import { catchUp } from '../engine/workers';
+import { tickContracts } from '../engine/contracts';
 import type { ResourceId } from '../data/resources';
 import { detectLang, setLang } from '../i18n';
 
@@ -89,6 +90,7 @@ export function startClock(): void {
     if (!c) return;
     regen(c, Date.now());
     if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
+    if (tickContracts(state, c, defaultRng, Date.now())) scheduleSave();
     if (state.workers.length) {
       catchUp(state, Date.now(), defaultRng);
       scheduleSave();

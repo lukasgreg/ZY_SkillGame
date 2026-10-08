@@ -14,6 +14,8 @@ export interface Recipe {
   bars?: number;
   inputs?: Partial<Record<ResourceId, number>>;
   out: { item: ItemDefId } | { res: ResourceId; n: number };
+  /** Extra rarity for skill gain (plans use 3). */
+  rarity?: number;
 }
 
 const smith = (id: ItemDefId, min: number, bars: number, inputs?: Recipe['inputs']): Recipe => ({

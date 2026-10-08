@@ -15,6 +15,7 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
     chars: s.chars.map(({ mineLevel, vein, ...c }: any) => ({ ...c, areas: { mine: mineLevel ?? 1, forest: 1, coast: 1, farm: 1 }, node: vein ?? null })),
   }),
   3: (s) => ({ ...s, version: 4, workers: [], hires: 0, bunkhouse: 0, workersAt: Date.now() }),
+  4: (s) => ({ ...s, version: 5, contractOffers: [], contracts: [], nextContractAt: 0, chars: s.chars.map((c: any) => ({ ...c, plans: {} })) }),
 };
 
 export function deserialize(json: string): GameState {

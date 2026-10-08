@@ -1,9 +1,10 @@
 import type { ItemDefId, MetalId } from '../data/items';
+import type { PlanId } from '../data/plans';
 import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc;
@@ -16,6 +17,8 @@ export interface ItemInstance {
   quality: 'normal' | 'exceptional';
   /** Metal for items made from bars. */
   mat?: MetalId;
+  /** Made with a runic hammer: tougher and worth twice as much. */
+  runic?: boolean;
 }
 
 export interface Inventory {
@@ -47,6 +50,8 @@ export interface Character {
   /** Chosen area (level, grove, fishing spot, field) per gathering location. */
   areas: Record<GatherLoc, AreaId>;
   node: Node | null;
+  /** One-use plans owned, by count. */
+  plans: Partial<Record<PlanId, number>>;
   /** uid of the preferred tool in hand, if any. */
   tool: number | null;
   /** Timestamp of the last regeneration tick. */
@@ -100,6 +105,20 @@ export interface Worker {
   produced: Partial<Record<ResourceId, number>>;
 }
 
+/** A bulk order (UO's Bulk Order Deed): deliver `n` matching items or goods for a reward. */
+export interface Contract {
+  id: number;
+  giver: string;
+  wants: ItemDefId | null;
+  wantsRes?: ResourceId;
+  minMat: MetalId | null;
+  exceptional: boolean;
+  n: number;
+  delivered: number;
+  reward: { gold: number; plan?: PlanId; res?: { id: ResourceId; n: number } };
+  expiresAt: number;
+}
+
 export interface GameState {
   version: number;
   chars: Character[];
@@ -119,6 +138,9 @@ export interface GameState {
   bunkhouse: number;
   /** When workers were last simulated. */
   workersAt: number;
+  contractOffers: Contract[];
+  contracts: Contract[];
+  nextContractAt: number;
   uidSeq: number;
   lastSeen: number;
 }
@@ -139,6 +161,9 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     hires: 0,
     bunkhouse: 0,
     workersAt: Date.now(),
+    contractOffers: [],
+    contracts: [],
+    nextContractAt: 0,
     uidSeq: 1,
     lastSeen: Date.now(),
   };

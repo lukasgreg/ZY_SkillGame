@@ -12,10 +12,12 @@ export const ITEM_IDS = [
   'buckler', 'heaterShield', 'woodenShield',
   // armor
   'chainCoif', 'ringmailTunic', 'plateHelm', 'platemail',
+  // from plans
+  'runicHammer', 'reinforcedPack', 'deepBlade', 'ancientBow',
 ] as const;
 
 export type ItemDefId = (typeof ITEM_IDS)[number];
-export type ItemKind = 'tool' | 'weapon' | 'shield' | 'armor';
+export type ItemKind = 'tool' | 'weapon' | 'shield' | 'armor' | 'bag';
 /** Grammatical gender of the Czech name, for adjective agreement (měděný meč / měděná dýka / měděné kladivo). */
 export type Gender = 'm' | 'f' | 'n';
 
@@ -37,6 +39,8 @@ export interface ItemDef {
   weaponSkill?: SkillId;
   dmg?: [number, number];
   armor?: number;
+  /** Bags: extra carrying capacity in stones (only the best bag counts). */
+  bagBonus?: number;
   gender: Gender;
 }
 
@@ -80,6 +84,12 @@ export const ITEMS: Record<ItemDefId, ItemDef> = {
   ringmailTunic: guard('ringmailTunic', 'armor', 6, 12, 60, 110, 'f'),
   plateHelm: guard('plateHelm', 'armor', 5, 5, 60, 80, 'f'),
   platemail: guard('platemail', 'armor', 12, 25, 80, 200, 'f'),
+
+  /** Each use while crafting makes a runic item; durability counts charges. */
+  runicHammer: { id: 'runicHammer', kind: 'tool', repairSkill: 'blacksmithing', metal: false, weight: 3, maxDur: 5, speed: 1, price: 400, gender: 'n' },
+  reinforcedPack: { id: 'reinforcedPack', kind: 'bag', repairSkill: 'tinkering', metal: false, weight: 3, maxDur: 200, speed: 1, price: 260, bagBonus: 50, gender: 'm' },
+  deepBlade: { ...weapon('deepBlade', 'edged', [16, 26], 1.0, 6, 120, 900, 'f'), metal: false },
+  ancientBow: weapon('ancientBow', 'archery', [18, 28], 1.1, 4, 110, 800, 'm', 'bowcraft'),
 };
 
 export const METAL_IDS = ['iron', 'steel', 'copper', 'silver', 'gold', 'mithril'] as const;

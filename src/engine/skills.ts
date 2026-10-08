@@ -1,3 +1,4 @@
+import { ITEMS } from '../data/items';
 import { PROFESSIONS, skillCap } from '../data/professions';
 import { SKILLS, SKILL_IDS, TOTAL_SKILL_CAP, TOTAL_STAT_CAP, type SkillId, type StatId } from '../data/skills';
 import { chance, clamp, pickWeighted, type Rng } from './rng';
@@ -91,8 +92,10 @@ export function isPowerHour(d: Date = new Date()): boolean {
   return (day === 5 || day === 6 || day === 0) && h >= 18 && h < 22;
 }
 
+/** 40 + 3.5 × STR (UO), plus the best bag carried. */
 export function maxWeight(c: Character): number {
-  return 40 + 3.5 * c.stats.str;
+  const bag = Math.max(0, ...c.pack.items.map((i) => ITEMS[i.def].bagBonus ?? 0));
+  return 40 + 3.5 * c.stats.str + bag;
 }
 
 export function maxHp(c: Character): number {

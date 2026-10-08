@@ -317,3 +317,13 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .small-chips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .small-chips .chip { padding: 3px 6px; }
 .small-chips .chip b { font-size: 11px; letter-spacing: 0.02em; }
+
+/* ---------- contracts & plans ---------- */
+.sub { font-family: var(--display); font-size: 13px; letter-spacing: 0.08em; color: var(--umber); margin: 10px 0 6px; }
+.contracts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.contract { border: 1px solid var(--brass); padding: 8px 10px; display: grid; gap: 4px; background: #f3e8cc80; }
+.contract .btn { justify-self: start; }
+.reward b { color: var(--umber); }
+.plan-name { font-style: italic; color: var(--umber); }
+.runic { display: flex; gap: 6px; align-items: center; font-size: 15px; margin-top: 8px; color: var(--umber); }
+.runic input { width: auto; accent-color: var(--umber); }

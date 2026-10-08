@@ -334,3 +334,57 @@ describe('workers', () => {
     expect(c.pack.res.oakLog).toBeUndefined();
   });
 });
+
+import { accept, combineFragments, craftPlan, fortify, handIn, makeContract, tickContracts } from './contracts';
+import { maxWeight } from './skills';
+
+describe('contracts and plans', () => {
+  it('offers contracts sized to the character and pays out on completion', () => {
+    const { s, c } = setup();
+    const rng = mulberry32(9);
+    c.skills.blacksmithing = 450;
+    expect(tickContracts(s, c, rng, Date.now())).toBe(true);
+    expect(s.contractOffers.length).toBe(1);
+    let k = makeContract(c, rng, Date.now())!;
+    while (!k.wants) k = makeContract(c, rng, Date.now())!;
+    s.contractOffers = [k];
+    expect(accept(s, k)).toBe(true);
+    const live = s.contracts[0];
+    for (let i = 0; i < live.n; i++) {
+      c.pack.items.push({ uid: 5000 + i, def: live.wants!, dur: 100, maxDur: 100, quality: 'exceptional', mat: 'mithril' });
+    }
+    const gold = c.gold;
+    const r = handIn(s, c, live);
+    expect(r.done).toBe(true);
+    expect(c.gold).toBe(gold + live.reward.gold);
+    expect(s.contracts.length).toBe(0);
+    expect(s.reputation).toBe(3);
+  });
+
+  it('fragments make a plan, and a plan is used up on success', () => {
+    const { s, c } = setup();
+    c.pack.res.planFragment = 5;
+    const id = combineFragments(c, () => 0)!;
+    expect(c.plans[id]).toBe(1);
+    c.plans = { fortifyingPowder: 1 };
+    c.skills.tinkering = 900;
+    c.pack.res.sulfur = 4;
+    c.pack.res.roughGem = 1;
+    c.pack.res.coal = 4;
+    const r = craftPlan(s, c, 'fortifyingPowder', () => 0.01)!;
+    expect(r.ok).toBe(true);
+    expect(c.plans.fortifyingPowder).toBeUndefined();
+    expect(c.pack.res.fortifyingPowder).toBe(3);
+    const it = c.pack.items[0];
+    const max = it.maxDur;
+    expect(fortify(c, it)).toBe(true);
+    expect(it.maxDur).toBe(max + 10);
+  });
+
+  it('a reinforced pack raises carrying capacity', () => {
+    const { c } = setup();
+    const base = maxWeight(c);
+    c.pack.items.push({ uid: 777, def: 'reinforcedPack', dur: 200, maxDur: 200, quality: 'normal' });
+    expect(maxWeight(c)).toBe(base + 50);
+  });
+});

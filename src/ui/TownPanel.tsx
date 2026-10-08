@@ -6,6 +6,7 @@ import { matchingItems, smithBuyPrice, wandererPays } from '../engine/wanderers'
 import { itemName, nameOf, num, t } from '../i18n';
 import { bankAll, buy, buyResource, deliver, repair, sell, sellToSmith, sellWanderer, travel } from './actions';
 import { Card, Durability } from './common';
+import { ContractBoard } from './Contracts';
 import { Pack } from './Pack';
 import { transient, update } from './store';
 
@@ -192,6 +193,7 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
       </div>
 
       <div class="stack">
+        <ContractBoard s={s} c={c} />
         <Card title={t('town.bank')} note={t('town.bankNote')}>
           <div class="row">
             <button class="btn" disabled={sellable.length === 0} onClick={bankAll}>

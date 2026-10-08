@@ -53,6 +53,7 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
     location: 'town',
     areas: { mine: 1, forest: 1, coast: 1, farm: 1 },
     node: null,
+    plans: {},
     tool: pick.uid,
     regenAt: Date.now(),
     createdAt: Date.now(),
