@@ -82,7 +82,8 @@ export function matches(w: Wanderer, it: ItemInstance): boolean {
 
 /** Cheapest fitting items first, so the obvious choice is the one you'd sell anyway. */
 export function matchingItems(c: Character, w: Wanderer): ItemInstance[] {
-  return c.pack.items.filter((i) => matches(w, i)).sort((a, b) => itemValue(a) - itemValue(b));
+  const worn = Object.values(c.equip);
+  return c.pack.items.filter((i) => matches(w, i) && !worn.includes(i.uid)).sort((a, b) => itemValue(a) - itemValue(b));
 }
 
 /** The offer, or more if the item beats the request (better metal or exceptional when not asked). */

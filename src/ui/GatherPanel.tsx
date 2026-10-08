@@ -138,16 +138,18 @@ export function GatherPanel({ s, c }: { s: GameState; c: Character }) {
       <div class="stack">
         <nav class="levels" aria-label={t(`loc.${loc}`)}>
           {AREAS[loc].map((a) => {
-            const open = areaOpen(c, loc, a.id);
+            const freed = s.cleared.includes('warrens');
+            const open = areaOpen(c, loc, a.id, freed);
+            const held = a.gnarlHeld && !freed;
             return (
               <button
                 key={a.id}
                 class={`chip ${areaId === a.id ? 'on' : ''}`}
                 disabled={!open || !!busy}
                 onClick={() => setArea(loc, a.id)}
-                title={a.gnarlHeld ? t('mine.gnarlHeld') : !open ? t('gather.needSkill', { skill: t(`skill.${skillId}`), n: a.need }) : undefined}
+                title={held ? t('mine.gnarlHeld') : !open ? t('gather.needSkill', { skill: t(`skill.${skillId}`), n: a.need }) : undefined}
               >
-                <b>{a.gnarlHeld ? t('mine.gnarlHeld') : t(`area.${loc}.${a.id}`)}</b>
+                <b>{held ? t('mine.gnarlHeld') : t(`area.${loc}.${a.id}`)}</b>
                 <span>
                   {t(`skill.${skillId}`)} {a.need}+
                 </span>

@@ -104,7 +104,8 @@ export function handIn(s: GameState, c: Character, k: Contract): { given: number
     given = Math.min(need, c.pack.res[k.wantsRes] ?? 0);
     addRes(c.pack, k.wantsRes, -given);
   } else {
-    const items = c.pack.items.filter((i) => fits(k, i)).slice(0, need);
+    const worn = Object.values(c.equip);
+    const items = c.pack.items.filter((i) => fits(k, i) && !worn.includes(i.uid)).slice(0, need);
     given = items.length;
     c.pack.items = c.pack.items.filter((i) => !items.includes(i));
   }

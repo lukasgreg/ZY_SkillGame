@@ -1,13 +1,15 @@
-import type { ItemDefId, MetalId } from '../data/items';
+import type { DungeonId, MonsterId } from '../data/dungeons';
+import type { ItemDefId, MetalId, Slot } from '../data/items';
 import type { PlanId } from '../data/plans';
 import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export type Lock = 'up' | 'down' | 'locked';
-export type Location = 'town' | GatherLoc;
+export type Location = 'town' | GatherLoc | 'dungeon';
+export type Stance = 'normal' | 'combat' | 'defensive';
 
 export interface ItemInstance {
   uid: number;
@@ -50,6 +52,13 @@ export interface Character {
   /** Chosen area (level, grove, fishing spot, field) per gathering location. */
   areas: Record<GatherLoc, AreaId>;
   node: Node | null;
+  /** Worn equipment: uids of items in the pack. */
+  equip: Partial<Record<Slot, number>>;
+  stance: Stance;
+  /** The dungeon expedition in progress, if any. */
+  run: Run | null;
+  /** Where this character last died, until it decays. */
+  corpse: Corpse | null;
   /** One-use plans owned, by count. */
   plans: Partial<Record<PlanId, number>>;
   /** uid of the preferred tool in hand, if any. */
@@ -105,6 +114,67 @@ export interface Worker {
   produced: Partial<Record<ResourceId, number>>;
 }
 
+export type RoomType = 'start' | 'monster' | 'elite' | 'treasure' | 'shrine' | 'trap' | 'boss';
+
+export interface DNode {
+  id: number;
+  layer: number;
+  type: RoomType;
+  next: number[];
+  /** Entering this room seals the way back (a collapse or a drop). */
+  oneWay: boolean;
+  cleared: boolean;
+}
+
+export interface Foe {
+  kind: MonsterId;
+  hp: number;
+  /** Rounds left stunned. */
+  stunned: number;
+}
+
+export interface Combat {
+  foes: Foe[];
+  round: number;
+  secondWindUsed: boolean;
+  /** A bandage being applied; it lands at the end of the round unless you are hit. */
+  bandaging: boolean;
+  /** Rounds left of Warrior's Cry: enemies hit less often. */
+  cowed: number;
+  /** Leap: you act first next round. */
+  first: boolean;
+}
+
+export interface Run {
+  dungeon: DungeonId;
+  seed: number;
+  nodes: DNode[];
+  at: number;
+  path: number[];
+  /** You crossed a one-way passage: no walking out until the boss falls or Way Home. */
+  sealed: boolean;
+  bossDown: boolean;
+  combat: Combat | null;
+  /** You fled but couldn't go back: you're out of the fight in a corner of this room. */
+  retreated: boolean;
+  /** How much was scouted before entering (0 none, 1 rooms, 2 rooms + passages). */
+  scouted: number;
+  log: LogEntry[];
+  /** Gold and goods found this run (for the summary). */
+  loot: number;
+}
+
+export interface Corpse {
+  dungeon: DungeonId;
+  seed: number;
+  nodes: DNode[];
+  node: number;
+  pack: Inventory;
+  gold: number;
+  equip: Partial<Record<Slot, number>>;
+  decaysAt: number;
+}
+
 /** A bulk order (UO's Bulk Order Deed): deliver `n` matching items or goods for a reward. */
 export interface Contract {
   id: number;
@@ -138,6 +208,11 @@ export interface GameState {
   bunkhouse: number;
   /** When workers were last simulated. */
   workersAt: number;
+  /** The seed of the next expedition per dungeon (so scouting applies to the run you will get). */
+  dungeonSeeds: Partial<Record<DungeonId, number>>;
+  scouted: Partial<Record<DungeonId, number>>;
+  /** Dungeons whose boss has fallen at least once. */
+  cleared: DungeonId[];
   contractOffers: Contract[];
   contracts: Contract[];
   nextContractAt: number;
@@ -161,6 +236,9 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     hires: 0,
     bunkhouse: 0,
     workersAt: Date.now(),
+    dungeonSeeds: {},
+    scouted: {},
+    cleared: [],
     contractOffers: [],
     contracts: [],
     nextContractAt: 0,

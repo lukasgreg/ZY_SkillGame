@@ -65,6 +65,10 @@ export const RECIPES: Recipe[] = [
   wood('bowcraft', 'longbow', 35, { ashLog: 4, flax: 2 }),
   wood('bowcraft', 'compositeBow', 60, { yewLog: 4, flax: 2, resin: 2 }),
 
+  { id: 'bandage', skill: 'tailoring', min: 0, max: 35, tool: 'sewingKit', inputs: { flax: 1 }, out: { res: 'bandage', n: 3 } },
+  { id: 'repairKit', skill: 'tinkering', min: 30, max: 60, tool: 'tinkerTools', inputs: { ironBar: 2, log: 1, resin: 1 }, out: { res: 'repairKit', n: 1 } },
+  tinker('sewingKit', 10, { ironBar: 1, flax: 2 }),
+
   cook('bread', 0, { wheat: 2 }),
   cook('cookedFish', 5, { perch: 1 }),
   cook('fishPie', 25, { carp: 1, wheat: 1 }),

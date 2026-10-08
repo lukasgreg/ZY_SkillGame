@@ -10,7 +10,8 @@ import { ContractBoard } from './Contracts';
 import { Pack } from './Pack';
 import { transient, update } from './store';
 
-const SHOP: ItemDefId[] = ['pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe', 'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet'];
+const SHOP: ItemDefId[] = ['pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe', 'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit'];
+const GOODS: [ResourceId, number][] = [['log', 5], ['bandage', 10], ['arrow', 20], ['flax', 5]];
 
 export function TownPanel({ s, c }: { s: GameState; c: Character }) {
   const busy = transient.busy;
@@ -30,7 +31,8 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
   const damaged = c.pack.items.filter((i) => i.dur < i.maxDur);
 
   const now = Date.now();
-  const crafted = c.pack.items.filter((i) => ITEMS[i.def].kind !== 'tool' || i.uid !== c.tool);
+  const worn = Object.values(c.equip);
+  const crafted = c.pack.items.filter((i) => (ITEMS[i.def].kind !== 'tool' || i.uid !== c.tool) && !worn.includes(i.uid));
 
   return (
     <div class="grid-2">
@@ -144,15 +146,17 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
                   </td>
                 </tr>
               ))}
-              <tr>
-                <th>{t('res.log')}</th>
-                <td />
-                <td class="actions">
-                  <button class="btn btn-small" disabled={c.gold < buyResPrice('log') * 5} onClick={() => buyResource('log', 5)}>
-                    {t('town.buyN', { n: 5, p: buyResPrice('log') * 5 })}
-                  </button>
-                </td>
-              </tr>
+              {GOODS.map(([id, n]) => (
+                <tr key={id}>
+                  <th>{t(`res.${id}`)}</th>
+                  <td />
+                  <td class="actions">
+                    <button class="btn btn-small" disabled={c.gold < buyResPrice(id) * n} onClick={() => buyResource(id, n)}>
+                      {t('town.buyN', { n, p: buyResPrice(id) * n })}
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </Card>

@@ -174,7 +174,7 @@ describe('crafting', () => {
 
   it('craftsman starts with smithing and tinkering tools', () => {
     const { c } = setup();
-    expect(c.pack.items.map((i) => i.def).sort()).toEqual(['hatchet', 'pickaxe', 'smithHammer', 'tinkerTools']);
+    expect(c.pack.items.map((i) => i.def).sort()).toEqual(['club', 'hatchet', 'pickaxe', 'smithHammer', 'tinkerTools']);
   });
 
   it('smelts two ore into a bar', () => {
@@ -386,5 +386,149 @@ describe('contracts and plans', () => {
     const base = maxWeight(c);
     c.pack.items.push({ uid: 777, def: 'reinforcedPack', dur: 200, maxDur: 200, quality: 'normal' });
     expect(maxWeight(c)).toBe(base + 50);
+  });
+});
+
+import { canStance, equip, hitChance, setStance, weaponInfo } from './combat';
+import { camp, canLeave, decay, enter, exits, fight, generate, here, leave, lootCorpse, move, scout } from './dungeon';
+import { DUNGEON_IDS } from '../data/dungeons';
+
+function warrior(seed = 3) {
+  const rng = mulberry32(seed);
+  const s = newGameState('en');
+  const c = createCharacter(s, 'Ragna', 'barbarian', 'warrior', rollCharacter('barbarian', 'warrior', rng));
+  return { s, c, rng };
+}
+
+describe('combat', () => {
+  it('warriors start armed and armoured', () => {
+    const { c } = warrior();
+    expect(weaponInfo(c).skill).toBe('edged');
+    expect(c.equip.shield).toBeDefined();
+    expect(c.equip.head).toBeDefined();
+  });
+
+  it('hit chance is 50% between equals and rises with skill', () => {
+    expect(hitChance(50, 50)).toBeCloseTo(0.5);
+    expect(hitChance(80, 50)).toBeGreaterThan(hitChance(50, 50));
+  });
+
+  it('stances need training and cost all stamina', () => {
+    const { c } = warrior();
+    c.skills.tactics = 400;
+    expect(canStance(c, 'combat')).toBe(false);
+    c.skills.tactics = 500;
+    c.stamina = 30;
+    expect(setStance(c, 'combat')).toBe(true);
+    expect(c.stamina).toBe(0);
+  });
+
+  it('equipping a ranged weapon needs arrows to attack', () => {
+    const { c } = warrior();
+    c.pack.items.push({ uid: 4242, def: 'shortbow', dur: 40, maxDur: 40, quality: 'normal' });
+    expect(equip(c, 4242)).toBe(true);
+    expect(weaponInfo(c).skill).toBe('archery');
+  });
+});
+
+describe('dungeons', () => {
+  it('generates the same map from the same seed, ending in a boss', () => {
+    for (const id of DUNGEON_IDS) {
+      const a = generate(id, 1234);
+      expect(generate(id, 1234)).toEqual(a);
+      expect(a[a.length - 1].type).toBe('boss');
+      // every room except the start is reachable
+      const reach = new Set([0]);
+      for (const n of a) if (reach.has(n.id)) n.next.forEach((x) => reach.add(x));
+      expect(reach.size).toBe(a.length);
+    }
+  });
+
+  it('scouting costs gold, trackers scout the first level free', () => {
+    const { s, c } = warrior();
+    c.gold = 0;
+    expect(scout(s, c, 'manor', 1)).toBe(false);
+    c.skills.tracking = 300;
+    expect(scout(s, c, 'manor', 1)).toBe(true);
+  });
+
+  it('a full run: fight, clear rooms and walk out', () => {
+    const { s, c } = warrior(11);
+    const rng = mulberry32(11);
+    for (const k of ['edged', 'tactics', 'shieldBlock', 'anatomy'] as const) c.skills[k] = 1000;
+    c.stats.str = 100;
+    const run = enter(s, c, 'cellar', rng)!;
+    expect(c.location).toBe('dungeon');
+    let steps = 0;
+    while (!run.bossDown && steps++ < 200) {
+      c.hp = 999;
+      if (run.combat) fight(s, c, { type: 'attack' }, rng);
+      else {
+        const ex = exits(run);
+        if (!ex.length) break;
+        move(s, c, ex[0].id, rng);
+      }
+    }
+    expect(run.bossDown).toBe(true);
+    expect(canLeave(run)).toBe(true);
+    expect(leave(c)).toBe(true);
+    expect(c.location).toBe('town');
+    expect(s.cleared).toContain('cellar');
+  });
+
+  it('dying leaves a corpse you can loot within five minutes', () => {
+    const { s, c } = warrior(5);
+    const rng = mulberry32(5);
+    const run = enter(s, c, 'frostCave', rng)!;
+    const gold = (c.gold = 77);
+    move(s, c, exits(run)[0].id, rng);
+    expect(run.combat).not.toBe(null);
+    c.hp = 1;
+    let out = null;
+    for (let i = 0; i < 50 && out !== 'died'; i++) {
+      c.skills.edged = 0;
+      out = fight(s, c, { type: 'bandage' }, rng);
+      if (out === 'won') break;
+    }
+    expect(out).toBe('died');
+    expect(c.location).toBe('town');
+    expect(c.gold).toBe(0);
+    expect(c.pack.items.length).toBe(0);
+    const corpseNode = c.corpse!.node;
+    // go back with a fresh body and clear the way
+    for (const k of ['edged', 'tactics', 'shieldBlock'] as const) c.skills[k] = 1000;
+    const again = enter(s, c, 'frostCave', rng)!;
+    expect(again.seed).toBe(c.corpse!.seed);
+    let steps = 0;
+    while (again.at !== corpseNode && steps++ < 100) {
+      c.hp = 999;
+      if (again.combat) fight(s, c, { type: 'attack' }, rng);
+      else move(s, c, again.nodes[0].next.includes(corpseNode) ? corpseNode : exits(again)[0].id, rng);
+    }
+    while (again.combat) {
+      c.hp = 999;
+      fight(s, c, { type: 'attack' }, rng);
+    }
+    expect(lootCorpse(c)).toBe(true);
+    expect(c.gold).toBeGreaterThanOrEqual(gold);
+    expect(c.corpse).toBe(null);
+  });
+
+  it('corpses decay after five minutes', () => {
+    const { s, c, rng } = warrior();
+    enter(s, c, 'cellar', rng);
+    c.corpse = { dungeon: 'cellar', seed: 1, nodes: generate('cellar', 1), node: 1, pack: { res: {}, items: [] }, gold: 5, equip: {}, decaysAt: Date.now() - 1 };
+    expect(decay(c)).toBe(true);
+    expect(c.corpse).toBe(null);
+  });
+
+  it('camping restores or gets you ambushed', () => {
+    const { s, c, rng } = warrior();
+    enter(s, c, 'cellar', rng);
+    c.hp = 10;
+    const r = camp(s, c, () => 0.99);
+    expect(r).toBe('rested');
+    expect(c.hp).toBeGreaterThan(10);
+    expect(here(c.run!).type).toBe('start');
   });
 });

@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import { CharacterPanel } from './CharacterPanel';
 import { Card, JournalLines } from './common';
 import { Create } from './Create';
+import { DungeonPanel } from './DungeonPanel';
 import { ForgePanel } from './ForgePanel';
 import { Header } from './Header';
 import { GatherPanel } from './GatherPanel';
@@ -13,7 +14,7 @@ import { TownPanel } from './TownPanel';
 import { useGame } from './store';
 import { WorkersPanel } from './WorkersPanel';
 
-const TABS = ['gather', 'town', 'forge', 'workers', 'skills', 'character', 'journal', 'settings'] as const;
+const TABS = ['gather', 'town', 'forge', 'workers', 'dungeon', 'skills', 'character', 'journal', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 function readTab(): Tab {
@@ -54,9 +55,21 @@ export function App() {
           </button>
         ))}
       </nav>
-      {tab === 'gather' && <GatherPanel s={s} c={c} />}
-      {tab === 'town' && <TownPanel s={s} c={c} />}
-      {tab === 'forge' && <ForgePanel c={c} />}
+      {c.location === 'dungeon' && (tab === 'gather' || tab === 'town' || tab === 'forge') ? (
+        <Card title={t(`dun.${c.run?.dungeon ?? 'cellar'}`)}>
+          <p>{t('dun.youAreIn')}</p>
+          <button class="btn btn-primary" onClick={() => go('dungeon')}>
+            {t('nav.dungeon')}
+          </button>
+        </Card>
+      ) : (
+        <>
+          {tab === 'gather' && <GatherPanel s={s} c={c} />}
+          {tab === 'town' && <TownPanel s={s} c={c} />}
+          {tab === 'forge' && <ForgePanel c={c} />}
+        </>
+      )}
+      {tab === 'dungeon' && <DungeonPanel s={s} c={c} />}
       {tab === 'workers' && <WorkersPanel s={s} c={c} />}
       {tab === 'skills' && <SkillsPanel c={c} />}
       {tab === 'character' && <CharacterPanel c={c} />}

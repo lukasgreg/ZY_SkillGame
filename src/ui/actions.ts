@@ -1,5 +1,9 @@
 import { ITEMS, type ItemDefId, type MetalId } from '../data/items';
 import type { Recipe } from '../data/recipes';
+import type { DungeonId } from '../data/dungeons';
+import type { Slot } from '../data/items';
+import { equip, setStance, unequip, type Action } from '../engine/combat';
+import { camp, enter, fight, here, leave, lootCorpse, move, reengage, scout, useRepairKit, wayHome } from '../engine/dungeon';
 import { PLANS, type PlanId } from '../data/plans';
 import { abandon, accept, combineFragments, craftPlan, fortify, handIn } from '../engine/contracts';
 import type { SkillId } from '../data/skills';
@@ -9,7 +13,7 @@ import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import { eat } from '../engine/character';
 import { canGather, findNode, isGatherLoc, pull, swingTime } from '../engine/gather';
 import { defaultRng } from '../engine/rng';
-import { activeChar, log, type Character, type Contract, type GameState, type ItemInstance, type Location, type Wanderer } from '../engine/state';
+import { activeChar, log, type Character, type Contract, type GameState, type ItemInstance, type Location, type Stance, type Wanderer } from '../engine/state';
 import { buyItem, buyRes, buyResPrice, depositAll, npcRepair, npcRepairCost, sellRes } from '../engine/town';
 import { itemParam, skillNum, t } from '../i18n';
 import { getState, touch, transient, update } from './store';
@@ -84,7 +88,7 @@ export function searchNode(): void {
 
 export function travel(to: Location): void {
   const c = activeChar(getState());
-  if (!c || transient.busy || c.location === to) return;
+  if (!c || transient.busy || c.location === to || c.location === 'dungeon') return;
   timed('travel', 2500, () =>
     withChar((s, c) => {
       c.location = to;
@@ -313,5 +317,91 @@ export function fortifyItem(it: ItemInstance): void {
   withChar((s, c) => {
     const live = c.pack.items.find((i) => i.uid === it.uid);
     if (live && fortify(c, live)) log(s, 'log.fortified', { item: itemParam(live) }, 'good');
+  });
+}
+
+/* ---------------- dungeons ---------------- */
+
+export function scoutDungeon(id: DungeonId, level: 1 | 2): void {
+  withChar((s, c) => {
+    if (scout(s, c, id, level)) log(s, 'log.dun.scouted', { d: `@dun.${id}` }, 'sys');
+  });
+}
+
+export function enterDungeon(id: DungeonId): void {
+  const c = activeChar(getState());
+  if (!c || transient.busy || c.location !== 'town') return;
+  timed('travel', 2000, () =>
+    withChar((s, c) => {
+      if (enter(s, c, id, rng)) log(s, 'log.dun.entered', { d: `@dun.${id}` }, 'sys');
+    }),
+  );
+}
+
+export function moveTo(nodeId: number): void {
+  const c = activeChar(getState());
+  if (!c?.run || transient.busy) return;
+  timed('travel', 700, () => withChar((s, c) => void move(s, c, nodeId, rng)));
+}
+
+export function fightAction(a: Action): void {
+  const c = activeChar(getState());
+  if (!c?.run?.combat || transient.busy) return;
+  timed('fight', 450, () =>
+    withChar((s, c) => {
+      const d = c.run!.dungeon;
+      const loot = c.run!.loot;
+      const out = fight(s, c, a, rng);
+      if (out === 'died') log(s, 'log.dun.died', { d: `@dun.${d}` }, 'bad');
+      else if (out === 'won' && c.run?.bossDown && here(c.run).type === 'boss') log(s, 'log.dun.bossDown', { d: `@dun.${d}`, gold: c.run.loot - loot }, 'gain');
+    }),
+  );
+}
+
+export function changeStance(st: Stance): void {
+  withChar((_, c) => void setStance(c, st));
+}
+
+export function leaveDungeon(): void {
+  withChar((s, c) => {
+    const run = c.run;
+    if (run && leave(c)) log(s, 'log.dun.left', { d: `@dun.${run.dungeon}`, gold: run.loot }, 'good');
+  });
+}
+
+export function useWayHome(): void {
+  withChar((s, c) => {
+    if (wayHome(c)) log(s, 'log.dun.wayHome', undefined, 'sys');
+  });
+}
+
+export function campHere(): void {
+  const c = activeChar(getState());
+  if (!c?.run || c.run.combat || transient.busy) return;
+  timed('search', 3000, () => withChar((s, c) => void camp(s, c, rng)));
+}
+
+export function reengageFoes(): void {
+  withChar((_, c) => void reengage(c));
+}
+
+export function lootMyCorpse(): void {
+  withChar((s, c) => {
+    if (lootCorpse(c)) log(s, 'log.dun.corpseLooted', undefined, 'gain');
+  });
+}
+
+export function wear(uid: number): void {
+  withChar((_, c) => void equip(c, uid));
+}
+
+export function takeOff(slot: Slot): void {
+  withChar((_, c) => unequip(c, slot));
+}
+
+export function fieldRepair(uid: number): void {
+  withChar((s, c) => {
+    const it = c.pack.items.find((i) => i.uid === uid);
+    if (it && useRepairKit(c, uid)) log(s, 'log.repairKit', { item: itemParam(it) }, 'good');
   });
 }

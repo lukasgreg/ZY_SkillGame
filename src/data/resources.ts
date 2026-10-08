@@ -16,6 +16,8 @@ export const RESOURCE_IDS = [
   'arrow', 'bread', 'cookedFish', 'fishPie', 'herbalStew', 'smokedSturgeon', 'foundersFeast', 'fortifyingPowder',
   // rare: contract rewards and finds
   'etherealOre', 'ancientWood', 'dragonScale', 'planFragment',
+  // adventuring
+  'bandage', 'repairKit', 'wayHome',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -88,6 +90,10 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   ancientWood: r('ancientWood', 2, 70, 3),
   dragonScale: r('dragonScale', 0.5, 150, 3),
   planFragment: r('planFragment', 0, 15, 2),
+
+  bandage: r('bandage', 0.1, 2, 0),
+  repairKit: r('repairKit', 1, 15, 0.3),
+  wayHome: r('wayHome', 0.1, 120, 2),
 };
 
 /**

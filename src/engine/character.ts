@@ -1,6 +1,6 @@
 import { PROFESSIONS, RACES, skillCap, type ProfessionId, type RaceId } from '../data/professions';
 import { SKILL_IDS, type SkillId, type StatId } from '../data/skills';
-import { ITEMS, type ItemDefId } from '../data/items';
+import { ITEMS, slotOf, type ItemDefId } from '../data/items';
 import { RESOURCES } from '../data/resources';
 import { randInt, type Rng } from './rng';
 import { maxHp, maxStamina } from './skills';
@@ -38,6 +38,19 @@ export function makeItem(s: GameState, def: ItemDefId): ItemInstance {
 
 export function createCharacter(s: GameState, name: string, race: RaceId, prof: ProfessionId, roll: Roll): Character {
   const pick = makeItem(s, 'pickaxe');
+  const gear: Record<ProfessionId, ItemDefId[]> = {
+    craftsman: ['hatchet', 'smithHammer', 'tinkerTools', 'club'],
+    warrior: ['shortsword', 'buckler', 'chainCoif'],
+    ranger: ['shortbow', 'fishingRod'],
+  };
+  const items = [pick, ...gear[prof].map((d) => makeItem(s, d))];
+  const equip: Character['equip'] = {};
+  for (const it of items) {
+    const slot = slotOf(it.def);
+    if (slot && !(slot in equip)) equip[slot] = it.uid;
+  }
+  const res: Inventory['res'] = { bandage: prof === 'craftsman' ? 5 : 10 };
+  if (prof === 'ranger') res.arrow = 60;
   const c: Character = {
     id: nextUid(s),
     name,
@@ -49,11 +62,15 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
     hp: 0,
     stamina: 0,
     gold: PROFESSIONS[prof].startGold,
-    pack: { res: {}, items: prof === 'craftsman' ? [pick, makeItem(s, 'hatchet'), makeItem(s, 'smithHammer'), makeItem(s, 'tinkerTools')] : [pick] },
+    pack: { res, items },
     location: 'town',
     areas: { mine: 1, forest: 1, coast: 1, farm: 1 },
     node: null,
     plans: {},
+    equip,
+    stance: 'normal',
+    run: null,
+    corpse: null,
     tool: pick.uid,
     regenAt: Date.now(),
     createdAt: Date.now(),

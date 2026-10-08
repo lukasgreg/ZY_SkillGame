@@ -33,10 +33,10 @@ function WorkerCard({ s, c, w }: { s: GameState; c: Character; w: Worker }) {
           <button
             key={a.id}
             class={`chip ${w.area === a.id ? 'on' : ''}`}
-            disabled={!workerAreaOpen(w, a.id)}
+            disabled={!workerAreaOpen(w, a.id, s.cleared.includes('warrens'))}
             onClick={() => update(() => (w.area = a.id))}
           >
-            <b>{a.gnarlHeld ? t('mine.gnarlHeld') : t(`area.${w.job}.${a.id}`)}</b>
+            <b>{a.gnarlHeld && !s.cleared.includes('warrens') ? t('mine.gnarlHeld') : t(`area.${w.job}.${a.id}`)}</b>
           </button>
         ))}
       </div>

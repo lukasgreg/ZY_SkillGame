@@ -4,7 +4,7 @@ import type { SkillId } from './skills';
 export const ITEM_IDS = [
   // tools
   'pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe',
-  'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet',
+  'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit',
   // weapons
   'dagger', 'shortsword', 'longsword', 'mace', 'warHammer',
   'club', 'quarterstaff', 'shortbow', 'longbow', 'compositeBow',
@@ -65,6 +65,7 @@ export const ITEMS: Record<ItemDefId, ItemDef> = {
   saw: tool('saw', 'carpentry', 2, 50, 1, 20, 'f'),
   carvingKnife: tool('carvingKnife', 'bowcraft', 1, 50, 1, 16, 'm'),
   skillet: tool('skillet', 'cooking', 2, 70, 1, 14, 'f'),
+  sewingKit: tool('sewingKit', 'tailoring', 1, 50, 1, 12, 'f'),
 
   dagger: weapon('dagger', 'piercing', [3, 8], 0.7, 1, 40, 16, 'f'),
   shortsword: weapon('shortsword', 'edged', [6, 12], 0.9, 4, 50, 40, 'm'),
@@ -116,6 +117,17 @@ export const METALS: Record<MetalId, MetalDef> = {
   gold: { id: 'gold', bar: 'goldBar', offset: 35, durMult: 0.9, priceMult: 4, rarity: 1, dmgMult: 1, armorMult: 1 },
   mithril: { id: 'mithril', bar: 'mithrilBar', offset: 50, durMult: 1.8, priceMult: 8, rarity: 2, dmgMult: 1.3, armorMult: 1.35 },
 };
+
+export type Slot = 'weapon' | 'shield' | 'head' | 'body';
+
+/** Where an item is worn, if it can be. */
+export function slotOf(def: ItemDefId): Slot | null {
+  const d = ITEMS[def];
+  if (d.kind === 'weapon') return 'weapon';
+  if (d.kind === 'shield') return 'shield';
+  if (d.kind === 'armor') return def === 'chainCoif' || def === 'plateHelm' ? 'head' : 'body';
+  return null;
+}
 
 /** Durability state words (design 4b). */
 export type DurState = 'pristine' | 'worn' | 'damaged' | 'failing';

@@ -7,12 +7,13 @@ import { defaultRng } from '../engine/rng';
 import { tickWanderers } from '../engine/wanderers';
 import { catchUp } from '../engine/workers';
 import { tickContracts } from '../engine/contracts';
+import { decay } from '../engine/dungeon';
 import type { ResourceId } from '../data/resources';
 import { detectLang, setLang } from '../i18n';
 
 /** UI-only state that is never saved (an action in progress, flashes). */
 export interface Transient {
-  busy: null | { kind: 'mine' | 'search' | 'travel' | 'smelt' | 'craft' | 'repair'; start: number; dur: number; label?: string };
+  busy: null | { kind: 'mine' | 'search' | 'travel' | 'smelt' | 'craft' | 'repair' | 'fight'; start: number; dur: number; label?: string };
   /** Repeats left in a craft/smelt batch; set to 0 to stop after the current one. */
   queue: number;
   /** Last skill gain, for the floating "+0.1" flash. */
@@ -91,6 +92,7 @@ export function startClock(): void {
     regen(c, Date.now());
     if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
     if (tickContracts(state, c, defaultRng, Date.now())) scheduleSave();
+    for (const ch of state.chars) if (decay(ch)) log(state, 'log.dun.decayed', { name: ch.name }, 'bad');
     if (state.workers.length) {
       catchUp(state, Date.now(), defaultRng);
       scheduleSave();

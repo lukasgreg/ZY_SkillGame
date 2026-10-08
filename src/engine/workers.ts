@@ -84,28 +84,30 @@ export function giveTool(c: Character, w: Worker, it: ItemInstance): boolean {
   return true;
 }
 
-export function workerAreaOpen(w: Worker, id: AreaId): boolean {
+export function workerAreaOpen(w: Worker, id: AreaId, freed = false): boolean {
   const a = areaOf(w.job, id);
-  return !a.gnarlHeld && w.skill / 10 >= a.need;
+  return (!a.gnarlHeld || freed) && w.skill / 10 >= a.need;
 }
+
+const freedOf = (s: GameState) => s.cleared.includes('warrens');
 
 export type WorkerStatus = 'working' | 'noTool' | 'unpaid' | 'nothing';
 
 export function status(s: GameState, w: Worker): WorkerStatus {
   if (w.toolDur <= 0) return 'noTool';
   if (s.bank.gold <= 0) return 'unpaid';
-  if (!workableRes(w).length) return 'nothing';
+  if (!workableRes(w, freedOf(s)).length) return 'nothing';
   return 'working';
 }
 
-function workableRes(w: Worker): [ResourceId, number][] {
-  const area = workerAreaOpen(w, w.area) ? w.area : 1;
+function workableRes(w: Worker, freed: boolean): [ResourceId, number][] {
+  const area = workerAreaOpen(w, w.area, freed) ? w.area : 1;
   return areaOf(w.job, area).nodes.filter(([res]) => w.skill / 10 >= YIELDS[res]!.min);
 }
 
 /** One worker attempt: roll a resource, deliver to the bank, wear the tool, pay the wage. */
 function workerPull(s: GameState, w: Worker, rng: Rng): void {
-  const res = pickWeighted(rng, workableRes(w));
+  const res = pickWeighted(rng, workableRes(w, freedOf(s)));
   if (!res) return;
   const skill = w.skill / 10;
   if (rng() < pullChance(skill, res)) {

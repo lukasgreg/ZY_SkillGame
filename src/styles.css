@@ -327,3 +327,38 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .plan-name { font-style: italic; color: var(--umber); }
 .runic { display: flex; gap: 6px; align-items: center; font-size: 15px; margin-top: 8px; color: var(--umber); }
 .runic input { width: auto; accent-color: var(--umber); }
+
+/* ---------- dungeons ---------- */
+.board { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.board li { border: 1px solid var(--brass); padding: 8px 10px; background: #f3e8cc80; display: grid; gap: 2px; }
+.board-head { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+.board-head strong { font-family: var(--display); font-size: 16px; }
+.board-ratings { display: flex; gap: 14px; }
+.rating { letter-spacing: 1px; font-size: 15px; color: #c8b48b; }
+.rating .on { color: var(--umber); }
+.countdown { font-family: var(--display); font-variant-numeric: tabular-nums; }
+.how { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.map-wrap { overflow-x: auto; border: 1px solid var(--brass); background: #f6eed8; }
+.map { display: block; max-width: none; margin: 0 auto; }
+.map .edge { stroke: #b8a179; stroke-width: 1.5; }
+.map .edge.walked { stroke: var(--umber); stroke-width: 2.5; }
+.map .edge.sealed { stroke: var(--rust); stroke-dasharray: 4 3; }
+.map .node circle { fill: #e9dcbc; stroke: var(--brass); stroke-width: 1.5; }
+.map .node text { font-size: 13px; fill: var(--ink-soft); pointer-events: none; }
+.map .node.seen circle { fill: #dccba3; }
+.map .node.done text { fill: var(--ink); }
+.map .node.reach { cursor: pointer; }
+.map .node.reach circle { stroke: var(--moss); stroke-width: 3; }
+.map .node.reach:hover circle { fill: #f3e8cc; }
+.map .node.here circle { fill: var(--umber); stroke: var(--ink); }
+.map .node.here text { fill: #f4e7c6; }
+.map .node.boss circle { stroke: var(--rust); }
+.map .corpse-mark { fill: var(--rust) !important; font-size: 14px; }
+.foes { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.foes li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(60px, 1fr) auto; gap: 8px; align-items: center; }
+.foes li.dead { opacity: 0.4; text-decoration: line-through; }
+.stances { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.actions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.slots li { display: grid; grid-template-columns: 4.5em minmax(0, 1fr) minmax(80px, 1fr) auto; gap: 8px; align-items: center; }
+@media (max-width: 520px) { .slots li { grid-template-columns: 4.5em 1fr; } }

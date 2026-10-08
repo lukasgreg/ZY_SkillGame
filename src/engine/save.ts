@@ -16,6 +16,14 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
   }),
   3: (s) => ({ ...s, version: 4, workers: [], hires: 0, bunkhouse: 0, workersAt: Date.now() }),
   4: (s) => ({ ...s, version: 5, contractOffers: [], contracts: [], nextContractAt: 0, chars: s.chars.map((c: any) => ({ ...c, plans: {} })) }),
+  5: (s) => ({
+    ...s,
+    version: 6,
+    dungeonSeeds: {},
+    scouted: {},
+    cleared: [],
+    chars: s.chars.map((c: any) => ({ ...c, equip: {}, stance: 'normal', run: null, corpse: null })),
+  }),
 };
 
 export function deserialize(json: string): GameState {

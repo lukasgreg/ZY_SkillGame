@@ -62,9 +62,10 @@ export function findNode(c: Character, rng: Rng): Node | null {
   return rollNode(c.location, c.areas[c.location], c.skills[GATHER_SKILL[c.location]] / 10, rng);
 }
 
-export function areaOpen(c: Character, loc: GatherLoc, id: AreaId): boolean {
+/** `freed`: the Gnarl Warrens boss has fallen, so Gnarl-held areas are open. */
+export function areaOpen(c: Character, loc: GatherLoc, id: AreaId, freed = false): boolean {
   const a = areaOf(loc, id);
-  return !a.gnarlHeld && c.skills[GATHER_SKILL[loc]] / 10 >= a.need;
+  return (!a.gnarlHeld || freed) && c.skills[GATHER_SKILL[loc]] / 10 >= a.need;
 }
 
 /** Milliseconds for one swing or cast: 2–5 s, faster with DEX, slower with a failing or slow tool. */
