@@ -6,18 +6,18 @@ import { Card, JournalLines } from './common';
 import { Create } from './Create';
 import { ForgePanel } from './ForgePanel';
 import { Header } from './Header';
-import { MinePanel } from './MinePanel';
+import { GatherPanel } from './GatherPanel';
 import { SettingsPanel } from './SettingsPanel';
 import { SkillsPanel } from './SkillsPanel';
 import { TownPanel } from './TownPanel';
 import { useGame } from './store';
 
-const TABS = ['mine', 'town', 'forge', 'skills', 'character', 'journal', 'settings'] as const;
+const TABS = ['gather', 'town', 'forge', 'skills', 'character', 'journal', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 function readTab(): Tab {
   const h = location.hash.slice(1);
-  return (TABS as readonly string[]).includes(h) ? (h as Tab) : 'mine';
+  return (TABS as readonly string[]).includes(h) ? (h as Tab) : 'gather';
 }
 
 export function App() {
@@ -53,7 +53,7 @@ export function App() {
           </button>
         ))}
       </nav>
-      {tab === 'mine' && <MinePanel s={s} c={c} />}
+      {tab === 'gather' && <GatherPanel s={s} c={c} />}
       {tab === 'town' && <TownPanel s={s} c={c} />}
       {tab === 'forge' && <ForgePanel c={c} />}
       {tab === 'skills' && <SkillsPanel c={c} />}

@@ -49,10 +49,10 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
     hp: 0,
     stamina: 0,
     gold: PROFESSIONS[prof].startGold,
-    pack: { res: {}, items: prof === 'craftsman' ? [pick, makeItem(s, 'smithHammer'), makeItem(s, 'tinkerTools')] : [pick] },
+    pack: { res: {}, items: prof === 'craftsman' ? [pick, makeItem(s, 'hatchet'), makeItem(s, 'smithHammer'), makeItem(s, 'tinkerTools')] : [pick] },
     location: 'town',
-    mineLevel: 1,
-    vein: null,
+    areas: { mine: 1, forest: 1, coast: 1, farm: 1 },
+    node: null,
     tool: pick.uid,
     regenAt: Date.now(),
     createdAt: Date.now(),
@@ -76,9 +76,6 @@ export function addRes(inv: Inventory, id: keyof typeof RESOURCES, n: number): v
   if (inv.res[id]! <= 0) delete inv.res[id];
 }
 
-export function toolInHand(c: Character): ItemInstance | null {
-  return c.pack.items.find((i) => i.uid === c.tool) ?? null;
-}
 
 /** Regenerates hp and stamina by race speed for time elapsed since the last tick. Values are fractional; the UI floors them. */
 export function regen(c: Character, now: number): void {
@@ -88,4 +85,14 @@ export function regen(c: Character, now: number): void {
   if (secs <= 0) return;
   c.hp = Math.min(maxHp(c), c.hp + secs / r.hp);
   c.stamina = Math.min(maxStamina(c), c.stamina + secs / r.stamina);
+}
+
+/** Eats one unit of food: restores stamina and hits. Returns false if it isn't food or none is left. */
+export function eat(c: Character, id: keyof typeof RESOURCES): boolean {
+  const food = RESOURCES[id].food;
+  if (!food || !(c.pack.res[id] ?? 0)) return false;
+  addRes(c.pack, id, -1);
+  c.stamina = Math.min(maxStamina(c), c.stamina + food.stamina);
+  c.hp = Math.min(maxHp(c), c.hp + food.hp);
+  return true;
 }

@@ -1,5 +1,7 @@
 import { ITEMS, METALS, METAL_IDS, type ItemDefId, type MetalId } from '../data/items';
 import { RECIPES } from '../data/recipes';
+import { RESOURCES, type ResourceId } from '../data/resources';
+import { addRes } from './character';
 import { itemValue } from './craft';
 import { chance, pickWeighted, randInt, type Rng } from './rng';
 import type { Character, GameState, ItemInstance, Wanderer } from './state';
@@ -17,29 +19,43 @@ function metalRank(m: MetalId | undefined): number {
   return METALS[m ?? 'iron'].offset;
 }
 
+/** Goods bundles: rangers buy arrows, everyone buys travel food. */
+const GOODS: { id: ResourceId; tier: number; kind: Wanderer['kind'] | null }[] = [
+  { id: 'arrow', tier: 0, kind: 'ranger' },
+  { id: 'bread', tier: 0, kind: null },
+  { id: 'cookedFish', tier: 0, kind: null },
+  { id: 'fishPie', tier: 2, kind: null },
+  { id: 'herbalStew', tier: 3, kind: null },
+  { id: 'smokedSturgeon', tier: 5, kind: null },
+];
+
 export function spawnWanderer(s: GameState, rng: Rng, now: number): Wanderer {
   const tier = repTier(s.reputation);
-  const options = RECIPES.filter((r) => 'item' in r.out && ITEMS[r.out.item].kind !== 'tool' && r.min <= 15 + tier * 12);
+  const kind: Wanderer['kind'] = rng() < 0.65 ? 'warrior' : 'ranger';
+  const id = now + Math.floor(rng() * 1000);
+  const name = NAMES[Math.floor(rng() * NAMES.length)];
+  const leavesAt = now + randInt(rng, 15, 25) * 60_000;
+  if (rng() < 0.3) {
+    const goods = GOODS.filter((g) => g.tier <= tier && (g.kind === null || g.kind === kind));
+    const g = goods[Math.floor(rng() * goods.length)];
+    const n = g.id === 'arrow' ? randInt(rng, 2, 6) * 10 : randInt(rng, 3, 8);
+    const offer = Math.round(RESOURCES[g.id].price * n * (1.3 + rng() * 0.4));
+    return { id, name, kind, wants: null, wantsRes: { id: g.id, n }, minMat: null, exceptional: false, offer, leavesAt };
+  }
+  const options = RECIPES.filter(
+    (r) => 'item' in r.out && ITEMS[r.out.item].kind !== 'tool' && r.min <= 15 + tier * 12 && (kind === 'ranger') === (ITEMS[r.out.item].weaponSkill === 'archery'),
+  );
   const r = options[Math.floor(rng() * options.length)];
   const wants = (r.out as { item: ItemDefId }).item;
   let minMat: MetalId | null = null;
-  if (chance(rng, tier * 0.1)) {
+  if (ITEMS[wants].metal && chance(rng, tier * 0.1)) {
     const metals = METAL_IDS.filter((m) => m !== 'iron' && METALS[m].offset <= tier * 9);
     minMat = pickWeighted(rng, metals.map((m) => [m, 1] as const));
   }
   const exceptional = chance(rng, 0.12 + tier * 0.05);
   const base = ITEMS[wants].price * (minMat ? METALS[minMat].priceMult : 1) * (exceptional ? 2.5 : 1);
   const offer = Math.round(base * (1.0 + rng() * 0.45));
-  return {
-    id: now + Math.floor(rng() * 1000),
-    name: NAMES[Math.floor(rng() * NAMES.length)],
-    kind: rng() < 0.7 ? 'warrior' : 'ranger',
-    wants,
-    minMat,
-    exceptional,
-    offer,
-    leavesAt: now + randInt(rng, 15, 25) * 60_000,
-  };
+  return { id, name, kind, wants, minMat, exceptional, offer, leavesAt };
 }
 
 /** Removes wanderers who left and lets a new one arrive when it is time. Returns true if anything changed. */
@@ -72,6 +88,19 @@ export function matchingItems(c: Character, w: Wanderer): ItemInstance[] {
 /** The offer, or more if the item beats the request (better metal or exceptional when not asked). */
 export function wandererPays(w: Wanderer, it: ItemInstance): number {
   return Math.max(w.offer, Math.round(itemValue(it) * 1.1));
+}
+
+export function canDeliverGoods(c: Character, w: Wanderer): boolean {
+  return !!w.wantsRes && (c.pack.res[w.wantsRes.id] ?? 0) >= w.wantsRes.n;
+}
+
+export function deliverGoods(s: GameState, c: Character, w: Wanderer): boolean {
+  if (!canDeliverGoods(c, w)) return false;
+  addRes(c.pack, w.wantsRes!.id, -w.wantsRes!.n);
+  c.gold += w.offer;
+  s.reputation += 1;
+  s.wanderers = s.wanderers.filter((x) => x !== w);
+  return true;
 }
 
 export function sellToWanderer(s: GameState, c: Character, w: Wanderer, it: ItemInstance): boolean {

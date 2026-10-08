@@ -1,12 +1,12 @@
 import type { ItemDefId, MetalId } from '../data/items';
 import type { ProfessionId, RaceId } from '../data/professions';
-import type { MineLevelId, ResourceId } from '../data/resources';
+import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export type Lock = 'up' | 'down' | 'locked';
-export type Location = 'town' | 'mine';
+export type Location = 'town' | GatherLoc;
 
 export interface ItemInstance {
   uid: number;
@@ -23,9 +23,10 @@ export interface Inventory {
   items: ItemInstance[];
 }
 
-export interface Vein {
+/** A gathering spot: an ore vein, a tree, a fish shoal or a field patch. */
+export interface Node {
   res: ResourceId;
-  /** Successful pulls left before the vein is exhausted. */
+  /** Successful pulls left before it is exhausted. */
   left: number;
 }
 
@@ -43,9 +44,10 @@ export interface Character {
   gold: number;
   pack: Inventory;
   location: Location;
-  mineLevel: MineLevelId;
-  vein: Vein | null;
-  /** uid of the tool in hand, if any. */
+  /** Chosen area (level, grove, fishing spot, field) per gathering location. */
+  areas: Record<GatherLoc, AreaId>;
+  node: Node | null;
+  /** uid of the preferred tool in hand, if any. */
   tool: number | null;
   /** Timestamp of the last regeneration tick. */
   regenAt: number;
@@ -71,7 +73,9 @@ export interface Wanderer {
   id: number;
   name: string;
   kind: 'warrior' | 'ranger';
-  wants: ItemDefId;
+  /** An item to buy, or null when the request is a bundle of goods (`wantsRes`). */
+  wants: ItemDefId | null;
+  wantsRes?: { id: ResourceId; n: number };
   /** Lowest acceptable metal, or null for any. */
   minMat: MetalId | null;
   exceptional: boolean;

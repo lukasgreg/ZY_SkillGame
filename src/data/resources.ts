@@ -1,8 +1,19 @@
+import type { SkillId } from './skills';
+
 export const RESOURCE_IDS = [
+  // mining
   'ironOre', 'copperOre', 'silverOre', 'goldOre', 'mithrilOre',
   'clay', 'stone', 'coal', 'sandstone', 'marble', 'obsidian', 'sulfur', 'roughGem',
+  // smelting
   'ironBar', 'steelBar', 'copperBar', 'silverBar', 'goldBar', 'mithrilBar',
-  'log',
+  // lumberjacking
+  'log', 'oakLog', 'ashLog', 'yewLog', 'heartwood', 'resin',
+  // fishing
+  'perch', 'carp', 'pike', 'sturgeon', 'pearl',
+  // farming
+  'wheat', 'feather', 'flax', 'herb', 'bloodmoss',
+  // crafted goods
+  'arrow', 'bread', 'cookedFish', 'fishPie', 'herbalStew', 'smokedSturgeon',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -15,9 +26,11 @@ export interface ResourceDef {
   price: number;
   /** 0 common .. 3 legendary; boosts skill gain chance. */
   rarity: number;
+  /** Eating restores stamina and hits. */
+  food?: { stamina: number; hp: number };
 }
 
-const r = (id: ResourceId, weight: number, price: number, rarity: number): ResourceDef => ({ id, weight, price, rarity });
+const r = (id: ResourceId, weight: number, price: number, rarity: number, food?: ResourceDef['food']): ResourceDef => ({ id, weight, price, rarity, food });
 
 export const RESOURCES: Record<ResourceId, ResourceDef> = {
   ironOre: r('ironOre', 1, 3, 0),
@@ -33,13 +46,39 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   obsidian: r('obsidian', 1, 14, 0.8),
   sulfur: r('sulfur', 0.5, 8, 0.5),
   roughGem: r('roughGem', 0.1, 45, 1.5),
+
   ironBar: r('ironBar', 0.5, 5, 0),
   steelBar: r('steelBar', 0.5, 12, 0.4),
   copperBar: r('copperBar', 0.5, 11, 0.3),
   silverBar: r('silverBar', 0.5, 20, 0.6),
   goldBar: r('goldBar', 0.5, 36, 1),
   mithrilBar: r('mithrilBar', 0.5, 105, 2),
+
   log: r('log', 2, 2, 0),
+  oakLog: r('oakLog', 2, 4, 0.3),
+  ashLog: r('ashLog', 2, 7, 0.6),
+  yewLog: r('yewLog', 2, 13, 1),
+  heartwood: r('heartwood', 2, 35, 2),
+  resin: r('resin', 0.2, 6, 0.5),
+
+  perch: r('perch', 0.5, 2, 0),
+  carp: r('carp', 1, 4, 0.3),
+  pike: r('pike', 1, 8, 0.6),
+  sturgeon: r('sturgeon', 2, 18, 1),
+  pearl: r('pearl', 0.1, 60, 2),
+
+  wheat: r('wheat', 0.5, 1, 0),
+  feather: r('feather', 0.05, 1, 0),
+  flax: r('flax', 0.5, 3, 0.3),
+  herb: r('herb', 0.2, 6, 0.6),
+  bloodmoss: r('bloodmoss', 0.2, 16, 1.2),
+
+  arrow: r('arrow', 0.05, 1, 0),
+  bread: r('bread', 0.3, 3, 0, { stamina: 10, hp: 5 }),
+  cookedFish: r('cookedFish', 0.4, 4, 0, { stamina: 15, hp: 5 }),
+  fishPie: r('fishPie', 0.6, 10, 0.3, { stamina: 25, hp: 10 }),
+  herbalStew: r('herbalStew', 0.8, 18, 0.6, { stamina: 35, hp: 25 }),
+  smokedSturgeon: r('smokedSturgeon', 1, 30, 1, { stamina: 50, hp: 20 }),
 };
 
 /**
@@ -55,47 +94,99 @@ export const SMELTING: Partial<Record<ResourceId, { bar: ResourceId; min: number
 };
 
 /**
- * Mining yields (Andaria model): `min` is the skill needed to extract it, `best` the skill at
+ * Gathering yields (Andaria model): `min` is the skill needed to gather it, `best` the skill at
  * which yield peaks. `perPull` is the max amount from one successful pull at full yield.
  */
-export interface MiningYield {
-  res: ResourceId;
+export interface Yield {
+  skill: SkillId;
   min: number;
   best: number;
   perPull: number;
 }
 
-export const MINING_YIELDS: Partial<Record<ResourceId, MiningYield>> = {
-  ironOre: { res: 'ironOre', min: 0, best: 30, perPull: 3 },
-  copperOre: { res: 'copperOre', min: 30, best: 60, perPull: 3 },
-  silverOre: { res: 'silverOre', min: 45, best: 75, perPull: 2 },
-  goldOre: { res: 'goldOre', min: 60, best: 90, perPull: 2 },
-  mithrilOre: { res: 'mithrilOre', min: 80, best: 110, perPull: 1 },
-  clay: { res: 'clay', min: 0, best: 50, perPull: 5 },
-  stone: { res: 'stone', min: 2, best: 60, perPull: 4 },
-  coal: { res: 'coal', min: 10, best: 70, perPull: 4 },
-  sandstone: { res: 'sandstone', min: 25, best: 75, perPull: 3 },
-  marble: { res: 'marble', min: 30, best: 90, perPull: 3 },
-  obsidian: { res: 'obsidian', min: 30, best: 100, perPull: 2 },
-  sulfur: { res: 'sulfur', min: 40, best: 100, perPull: 3 },
-  roughGem: { res: 'roughGem', min: 75, best: 110, perPull: 1 },
+const y = (skill: SkillId, min: number, best: number, perPull: number): Yield => ({ skill, min, best, perPull });
+
+export const YIELDS: Partial<Record<ResourceId, Yield>> = {
+  ironOre: y('mining', 0, 30, 3),
+  copperOre: y('mining', 30, 60, 3),
+  silverOre: y('mining', 45, 75, 2),
+  goldOre: y('mining', 60, 90, 2),
+  mithrilOre: y('mining', 80, 110, 1),
+  clay: y('mining', 0, 50, 5),
+  stone: y('mining', 2, 60, 4),
+  coal: y('mining', 10, 70, 4),
+  sandstone: y('mining', 25, 75, 3),
+  marble: y('mining', 30, 90, 3),
+  obsidian: y('mining', 30, 100, 2),
+  sulfur: y('mining', 40, 100, 3),
+  roughGem: y('mining', 75, 110, 1),
+
+  log: y('lumberjacking', 0, 30, 3),
+  oakLog: y('lumberjacking', 25, 55, 3),
+  ashLog: y('lumberjacking', 45, 75, 2),
+  yewLog: y('lumberjacking', 65, 95, 2),
+  heartwood: y('lumberjacking', 85, 110, 1),
+  resin: y('lumberjacking', 20, 80, 2),
+
+  perch: y('fishing', 0, 35, 2),
+  carp: y('fishing', 25, 60, 2),
+  pike: y('fishing', 45, 80, 1),
+  sturgeon: y('fishing', 70, 105, 1),
+  pearl: y('fishing', 60, 110, 1),
+
+  wheat: y('farming', 0, 30, 5),
+  feather: y('farming', 0, 40, 6),
+  flax: y('farming', 20, 55, 4),
+  herb: y('farming', 40, 75, 3),
+  bloodmoss: y('farming', 70, 105, 2),
 };
 
-export type MineLevelId = 1 | 2 | 3 | 4;
+export const GATHER_LOCS = ['mine', 'forest', 'coast', 'farm'] as const;
+export type GatherLoc = (typeof GATHER_LOCS)[number];
+export type AreaId = 1 | 2 | 3 | 4;
 
-export interface MineLevel {
-  id: MineLevelId;
-  /** Resources found on this level, with spawn weights for veins. */
-  veins: [ResourceId, number][];
-  /** Mining skill (whole points) needed to work this level. */
+export const GATHER_SKILL: Record<GatherLoc, SkillId> = {
+  mine: 'mining',
+  forest: 'lumberjacking',
+  coast: 'fishing',
+  farm: 'farming',
+};
+
+export interface Area {
+  id: AreaId;
+  /** Resources found here, with spawn weights for nodes (vein, tree, shoal, patch). */
+  nodes: [ResourceId, number][];
+  /** Skill (whole points) needed to work this area. */
   need: number;
-  /** Held by the Gnarl: must be cleared (later milestone) before mining. */
+  /** Held by the Gnarl: must be cleared (later milestone) first. */
   gnarlHeld: boolean;
 }
 
-export const MINE_LEVELS: MineLevel[] = [
-  { id: 1, veins: [['ironOre', 10], ['stone', 4], ['clay', 3], ['coal', 3]], need: 0, gnarlHeld: false },
-  { id: 2, veins: [['ironOre', 4], ['copperOre', 8], ['silverOre', 4], ['coal', 3], ['sandstone', 3], ['marble', 2]], need: 30, gnarlHeld: false },
-  { id: 3, veins: [['copperOre', 3], ['silverOre', 6], ['goldOre', 5], ['marble', 3], ['obsidian', 2], ['sulfur', 2], ['roughGem', 1]], need: 55, gnarlHeld: false },
-  { id: 4, veins: [['goldOre', 5], ['mithrilOre', 3], ['obsidian', 3], ['roughGem', 2]], need: 80, gnarlHeld: true },
-];
+const area = (id: AreaId, need: number, nodes: [ResourceId, number][], gnarlHeld = false): Area => ({ id, need, nodes, gnarlHeld });
+
+export const AREAS: Record<GatherLoc, Area[]> = {
+  mine: [
+    area(1, 0, [['ironOre', 10], ['stone', 4], ['clay', 3], ['coal', 3]]),
+    area(2, 30, [['ironOre', 4], ['copperOre', 8], ['silverOre', 4], ['coal', 3], ['sandstone', 3], ['marble', 2]]),
+    area(3, 55, [['copperOre', 3], ['silverOre', 6], ['goldOre', 5], ['marble', 3], ['obsidian', 2], ['sulfur', 2], ['roughGem', 1]]),
+    area(4, 80, [['goldOre', 5], ['mithrilOre', 3], ['obsidian', 3], ['roughGem', 2]], true),
+  ],
+  forest: [
+    area(1, 0, [['log', 10], ['oakLog', 3]]),
+    area(2, 30, [['log', 3], ['oakLog', 8], ['ashLog', 4], ['resin', 2]]),
+    area(3, 55, [['ashLog', 6], ['yewLog', 6], ['resin', 3]]),
+    area(4, 80, [['yewLog', 5], ['heartwood', 4], ['resin', 2]]),
+  ],
+  coast: [
+    area(1, 0, [['perch', 10], ['carp', 2]]),
+    area(2, 30, [['perch', 3], ['carp', 8], ['pike', 4]]),
+    area(3, 55, [['carp', 3], ['pike', 7], ['sturgeon', 3], ['pearl', 1]]),
+    area(4, 80, [['pike', 3], ['sturgeon', 7], ['pearl', 2]]),
+  ],
+  farm: [
+    area(1, 0, [['wheat', 10], ['feather', 5]]),
+    area(2, 20, [['wheat', 4], ['flax', 8], ['feather', 3]]),
+    area(3, 45, [['flax', 3], ['herb', 8], ['wheat', 2]]),
+    area(4, 70, [['herb', 4], ['bloodmoss', 6]]),
+  ],
+};

@@ -11,7 +11,7 @@ import { Card, Durability } from './common';
 import { Pack } from './Pack';
 import { transient } from './store';
 
-const CRAFT_SKILLS: SkillId[] = ['blacksmithing', 'tinkering'];
+const CRAFT_SKILLS: SkillId[] = ['blacksmithing', 'tinkering', 'carpentry', 'bowcraft', 'cooking'];
 const pct = (p: number) => Math.round(p * 100);
 
 /** Progress strip for the action in progress, with a Stop for batches. */
@@ -105,7 +105,7 @@ export function ForgePanel({ c }: { c: Character }) {
     <div class="grid-2">
       <div class="stack">
         <Card>
-          <div class="row tight">
+          <div class="crafts">
             {CRAFT_SKILLS.map((id) => (
               <button key={id} class={`chip ${skill === id ? 'on' : ''}`} onClick={() => setSkill(id)}>
                 <b>{t(`skill.${id}`)}</b>

@@ -12,7 +12,7 @@ export function Header({ c }: { c: Character }) {
       <div class="hud-id">
         <h1>{c.name}</h1>
         <p>
-          {t(`race.${c.race}`)} · {t(`prof.${c.profession}`)} · {t(c.location === 'town' ? 'loc.town' : 'loc.mine')}
+          {t(`race.${c.race}`)} · {t(`prof.${c.profession}`)} · {t(`loc.${c.location}`)}
         </p>
       </div>
       <div class="hud-bars">

@@ -3,11 +3,13 @@ import type { SkillId } from './skills';
 
 export const ITEM_IDS = [
   // tools
-  'pickaxe', 'shovel', 'hatchet', 'smithHammer', 'tinkerTools',
+  'pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe',
+  'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet',
   // weapons
   'dagger', 'shortsword', 'longsword', 'mace', 'warHammer',
+  'club', 'quarterstaff', 'shortbow', 'longbow', 'compositeBow',
   // shields
-  'buckler', 'heaterShield',
+  'buckler', 'heaterShield', 'woodenShield',
   // armor
   'chainCoif', 'ringmailTunic', 'plateHelm', 'platemail',
 ] as const;
@@ -38,31 +40,42 @@ export interface ItemDef {
   gender: Gender;
 }
 
-const tool = (id: ItemDefId, toolFor: SkillId, weight: number, maxDur: number, speed: number, price: number, gender: Gender): ItemDef => ({
-  id, kind: 'tool', toolFor, repairSkill: 'tinkering', metal: false, weight, maxDur, speed, price, gender,
+const tool = (id: ItemDefId, toolFor: SkillId, weight: number, maxDur: number, speed: number, price: number, gender: Gender, repairSkill: SkillId = 'tinkering'): ItemDef => ({
+  id, kind: 'tool', toolFor, repairSkill, metal: false, weight, maxDur, speed, price, gender,
 });
-const weapon = (id: ItemDefId, skill: SkillId, dmg: [number, number], speed: number, weight: number, maxDur: number, price: number, gender: Gender): ItemDef => ({
-  id, kind: 'weapon', weaponSkill: skill, dmg, repairSkill: 'blacksmithing', metal: true, weight, maxDur, speed, price, gender,
+const weapon = (id: ItemDefId, skill: SkillId, dmg: [number, number], speed: number, weight: number, maxDur: number, price: number, gender: Gender, repairSkill: SkillId = 'blacksmithing'): ItemDef => ({
+  id, kind: 'weapon', weaponSkill: skill, dmg, repairSkill, metal: repairSkill === 'blacksmithing', weight, maxDur, speed, price, gender,
 });
-const guard = (id: ItemDefId, kind: 'shield' | 'armor', armor: number, weight: number, maxDur: number, price: number, gender: Gender): ItemDef => ({
-  id, kind, armor, repairSkill: 'blacksmithing', metal: true, weight, maxDur, speed: 1, price, gender,
+const guard = (id: ItemDefId, kind: 'shield' | 'armor', armor: number, weight: number, maxDur: number, price: number, gender: Gender, repairSkill: SkillId = 'blacksmithing'): ItemDef => ({
+  id, kind, armor, repairSkill, metal: repairSkill === 'blacksmithing', weight, maxDur, speed: 1, price, gender,
 });
 
 export const ITEMS: Record<ItemDefId, ItemDef> = {
   pickaxe: tool('pickaxe', 'mining', 4, 50, 1, 30, 'm'),
   shovel: tool('shovel', 'mining', 3, 35, 1.15, 18, 'f'),
   hatchet: tool('hatchet', 'lumberjacking', 4, 50, 1, 26, 'f'),
+  fishingRod: tool('fishingRod', 'fishing', 1, 50, 1, 16, 'm', 'carpentry'),
+  hoe: tool('hoe', 'farming', 3, 60, 1, 18, 'f'),
   smithHammer: tool('smithHammer', 'blacksmithing', 3, 60, 1, 22, 'n'),
   tinkerTools: tool('tinkerTools', 'tinkering', 2, 50, 1, 20, 'n'),
+  saw: tool('saw', 'carpentry', 2, 50, 1, 20, 'f'),
+  carvingKnife: tool('carvingKnife', 'bowcraft', 1, 50, 1, 16, 'm'),
+  skillet: tool('skillet', 'cooking', 2, 70, 1, 14, 'f'),
 
   dagger: weapon('dagger', 'piercing', [3, 8], 0.7, 1, 40, 16, 'f'),
   shortsword: weapon('shortsword', 'edged', [6, 12], 0.9, 4, 50, 40, 'm'),
   longsword: weapon('longsword', 'edged', [10, 18], 1.1, 6, 60, 64, 'm'),
   mace: weapon('mace', 'blunt', [8, 15], 1.0, 6, 60, 48, 'm'),
   warHammer: weapon('warHammer', 'blunt', [14, 24], 1.4, 10, 70, 100, 'n'),
+  club: weapon('club', 'blunt', [5, 10], 0.9, 4, 40, 12, 'm', 'carpentry'),
+  quarterstaff: weapon('quarterstaff', 'blunt', [8, 14], 1.0, 4, 50, 30, 'f', 'carpentry'),
+  shortbow: weapon('shortbow', 'archery', [6, 12], 1.0, 3, 45, 30, 'm', 'bowcraft'),
+  longbow: weapon('longbow', 'archery', [10, 18], 1.2, 4, 55, 70, 'm', 'bowcraft'),
+  compositeBow: weapon('compositeBow', 'archery', [14, 22], 1.1, 4, 65, 140, 'm', 'bowcraft'),
 
   buckler: guard('buckler', 'shield', 3, 5, 50, 40, 'm'),
   heaterShield: guard('heaterShield', 'shield', 7, 10, 70, 96, 'm'),
+  woodenShield: guard('woodenShield', 'shield', 4, 6, 50, 34, 'm', 'carpentry'),
   chainCoif: guard('chainCoif', 'armor', 3, 3, 45, 48, 'f'),
   ringmailTunic: guard('ringmailTunic', 'armor', 6, 12, 60, 110, 'f'),
   plateHelm: guard('plateHelm', 'armor', 5, 5, 60, 80, 'f'),

@@ -3,6 +3,7 @@ import { packWeight } from '../engine/character';
 import { maxWeight } from '../engine/skills';
 import type { Character } from '../engine/state';
 import { nameOf, num, t } from '../i18n';
+import { eatFood } from './actions';
 import { Card } from './common';
 
 export function Pack({ c }: { c: Character }) {
@@ -17,6 +18,11 @@ export function Pack({ c }: { c: Character }) {
             <li key={id}>
               {t(`res.${id}`)} <b>× {n}</b>
               <span class="muted small"> · {num(RESOURCES[id].weight * n, 1)}</span>
+              {RESOURCES[id].food && (
+                <button class="btn btn-small eat" onClick={() => eatFood(id)} title={t('pack.eatTip', RESOURCES[id].food)}>
+                  {t('pack.eat')}
+                </button>
+              )}
             </li>
           ))}
           {c.pack.items.map((i) => (

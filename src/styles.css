@@ -181,10 +181,6 @@ button:disabled { cursor: default; }
 .ring-bg { fill: none; stroke: #c8b48b; stroke-width: 4; }
 .ring-fg { fill: none; stroke: var(--umber); stroke-width: 4; stroke-dasharray: 283; stroke-dashoffset: 283; animation: ring-fill linear forwards; }
 @keyframes ring-fill { to { stroke-dashoffset: 0; } }
-.vein-art { position: absolute; inset: 18%; width: 64%; height: 64%; }
-.vein-art .rock { fill: #a89a82; stroke: var(--ink); stroke-width: 1.6; }
-.vein-art .rock-hi { fill: #c4b79c; }
-.vein-art .seam { fill: none; stroke: #6b5b44; stroke-width: 1.2; }
 .pick { position: absolute; right: 2%; top: 2%; width: 46%; height: 46%; }
 .pick svg { width: 100%; height: 100%; transform-origin: 70% 75%; }
 .pick.swing svg { animation: swing 0.5s ease-in-out infinite; }
@@ -295,3 +291,17 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .card .chip span { color: var(--ink-soft); }
 .card .chip.on { background: var(--umber); border-color: var(--ink); }
 .card .chip.on b, .card .chip.on span { color: #f4e7c6; }
+.crafts { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 4px; }
+.dests { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dests li { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px dotted var(--brass); padding-bottom: 6px; }
+.inv .eat { margin-left: 6px; padding: 0 6px; font-size: 11px; }
+.node-art { position: absolute; inset: 18%; width: 64%; height: 64%; }
+.node-art .rock { fill: #a89a82; stroke: var(--ink); stroke-width: 1.6; }
+.node-art .rock-hi { fill: #c4b79c; }
+.node-art .seam { fill: none; stroke: #6b5b44; stroke-width: 1.2; }
+.node-art .trunk { fill: #6b4421; stroke: var(--ink); stroke-width: 1.4; }
+.node-art .crown { fill: #6d8450; stroke: var(--ink); stroke-width: 1.6; }
+.node-art .water { fill: #8fa6a8; stroke: var(--ink); stroke-width: 1.6; }
+.node-art .ripple { fill: none; stroke: #d9e2dc; stroke-width: 1.2; }
+.node-art .soil { fill: #8a6a44; stroke: var(--ink); stroke-width: 1.6; }
+.node-art .furrow { fill: none; stroke: #5d4428; stroke-width: 1.4; }

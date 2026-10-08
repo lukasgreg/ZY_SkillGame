@@ -2,10 +2,10 @@ import { ITEMS, type ItemDefId, type MetalId } from '../data/items';
 import type { Recipe } from '../data/recipes';
 import type { SkillId } from '../data/skills';
 import { canCraft, craft, repair as playerRepair, repairInfo, smelt, smeltChance } from '../engine/craft';
-import { sellToWanderer, smithBuyPrice, wandererPays } from '../engine/wanderers';
-import type { MineLevelId, ResourceId } from '../data/resources';
-import { toolInHand } from '../engine/character';
-import { canMine, findVein, pull, swingTime } from '../engine/mining';
+import { deliverGoods, sellToWanderer, smithBuyPrice, wandererPays } from '../engine/wanderers';
+import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
+import { eat } from '../engine/character';
+import { canGather, findNode, isGatherLoc, pull, swingTime } from '../engine/gather';
 import { defaultRng } from '../engine/rng';
 import { activeChar, log, type Character, type GameState, type ItemInstance, type Location, type Wanderer } from '../engine/state';
 import { buyItem, buyRes, buyResPrice, depositAll, npcRepair, npcRepairCost, sellRes } from '../engine/town';
@@ -42,37 +42,39 @@ function timed(kind: NonNullable<typeof transient.busy>['kind'], dur: number, do
   }, dur);
 }
 
-export function mine(): void {
+/** One swing, chop, cast or hoe stroke at the current node. */
+export function gather(): void {
   const c = activeChar(getState());
   if (!c || transient.busy) return;
-  const block = canMine(c);
+  const block = canGather(c);
   if (block) {
-    withChar((s) => log(s, `mine.block.${block}`, undefined, 'bad'));
+    withChar((s) => log(s, `gather.block.${block}`, undefined, 'bad'));
     return;
   }
+  const loc = c.location as GatherLoc;
   timed('mine', swingTime(c, rng), () =>
     withChar((s, c) => {
-      if (canMine(c)) return; // something changed while swinging
-      const tool = toolInHand(c)!;
+      if (canGather(c)) return; // something changed while swinging
       const r = pull(c, rng);
-      if (r.ok) log(s, 'log.mine.ok', { amount: r.amount, res: `@res.${r.res}` });
-      else log(s, `log.mine.fizzle.${Math.floor(rng() * 3)}`, undefined, 'bad');
-      noteGains(s, c, 'mining', r.gain, r.stat);
-      if (r.toolWarn) log(s, 'log.tool.warn', { item: itemParam(tool) }, 'bad');
-      if (r.toolBroke) log(s, 'log.tool.broke', { item: itemParam(tool) }, 'bad');
-      if (r.veinEmpty) log(s, 'log.mine.exhausted', undefined, 'sys');
+      if (r.ok) log(s, 'log.gather.ok', { amount: r.amount, res: `@res.${r.res}` });
+      else log(s, `log.fizzle.${loc}.${Math.floor(rng() * 3)}`, undefined, 'bad');
+      noteGains(s, c, r.skill, r.gain, r.stat);
+      if (r.toolWarn) log(s, 'log.tool.warn', { item: itemParam(r.tool) }, 'bad');
+      if (r.toolBroke) log(s, 'log.tool.broke', { item: itemParam(r.tool) }, 'bad');
+      if (r.nodeEmpty) log(s, `log.node.empty.${loc}`, undefined, 'sys');
     }),
   );
 }
 
-export function searchVein(): void {
+export function searchNode(): void {
   const c = activeChar(getState());
-  if (!c || transient.busy || c.location !== 'mine') return;
+  if (!c || transient.busy || !isGatherLoc(c.location)) return;
+  const loc = c.location;
   timed('search', 1200 + rng() * 800, () =>
     withChar((s, c) => {
-      c.vein = findVein(c, rng);
-      if (c.vein) log(s, 'log.mine.vein', { res: `@res.${c.vein.res}` }, 'sys');
-      else log(s, 'log.mine.noVein', undefined, 'bad');
+      c.node = findNode(c, rng);
+      if (c.node) log(s, `log.node.found.${loc}`, { res: `@res.${c.node.res}` }, 'sys');
+      else log(s, 'log.node.none', undefined, 'bad');
     }),
   );
 }
@@ -83,18 +85,34 @@ export function travel(to: Location): void {
   timed('travel', 2500, () =>
     withChar((s, c) => {
       c.location = to;
-      log(s, to === 'mine' ? 'log.travel.mine' : 'log.travel.town', undefined, 'sys');
+      c.node = null;
+      log(s, `log.travel.${to}`, undefined, 'sys');
     }),
   );
 }
 
-export function setMineLevel(id: MineLevelId): void {
+export function setArea(loc: GatherLoc, id: AreaId): void {
   if (transient.busy) return;
   withChar((s, c) => {
-    if (c.mineLevel === id) return;
-    c.mineLevel = id;
-    c.vein = null;
-    log(s, 'log.level', { level: `@mine.level.${id}` }, 'sys');
+    if (c.areas[loc] === id) return;
+    c.areas[loc] = id;
+    c.node = null;
+    log(s, 'log.area', { area: `@area.${loc}.${id}` }, 'sys');
+  });
+}
+
+export function eatFood(id: ResourceId): void {
+  withChar((s, c) => {
+    if (eat(c, id)) log(s, 'log.eat', { res: `@res.${id}` }, 'good');
+  });
+}
+
+export function deliver(w: Wanderer): void {
+  withChar((s, c) => {
+    const live = s.wanderers.find((x) => x.id === w.id);
+    if (live?.wantsRes && deliverGoods(s, c, live)) {
+      log(s, 'log.wanderer.goods', { n: live.wantsRes.n, res: `@res.${live.wantsRes.id}`, name: live.name, gold: live.offer }, 'good');
+    }
   });
 }
 

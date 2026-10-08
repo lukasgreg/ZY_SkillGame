@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SKILL_IDS } from '../data/skills';
 import { createCharacter, rollCharacter, packWeight } from './character';
-import { canMine, findVein, pull, pullChance } from './mining';
+import { canGather, findNode, pull, pullChance } from './gather';
 import { mulberry32 } from './rng';
 import { exportSave, importSave } from './save';
 import { gainAmount, gainChance, successChance, totalSkills, trySkillGain } from './skills';
@@ -75,11 +75,11 @@ describe('skill formulas', () => {
 describe('mining', () => {
   it('cannot mine in town, can at a vein', () => {
     const { c, rng } = setup();
-    expect(canMine(c)).toBe('notInMine');
+    expect(canGather(c)).toBe('notThere');
     c.location = 'mine';
-    expect(canMine(c)).toBe('noVein');
-    c.vein = findVein(c, rng);
-    expect(canMine(c)).toBe(null);
+    expect(canGather(c)).toBe('noNode');
+    c.node = findNode(c, rng);
+    expect(canGather(c)).toBe(null);
   });
 
   it('pull chance needs the minimum skill', () => {
@@ -91,25 +91,26 @@ describe('mining', () => {
   it('pulls wear the tool and break it at 0', () => {
     const { c, rng } = setup();
     c.location = 'mine';
-    c.vein = { res: 'ironOre', left: 999 };
+    c.node = { res: 'ironOre', left: 999 };
     c.stamina = 1e9;
     const tool = c.pack.items[0];
     tool.dur = 2;
     pull(c, rng);
     expect(tool.dur).toBe(1);
     const r = pull(c, rng);
-    expect(r.toolBroke).toBe(tool);
+    expect(r.toolBroke).toBe(true);
+    expect(r.tool).toBe(tool);
     expect(c.tool).toBe(null);
-    expect(canMine(c)).toBe('noTool');
+    expect(canGather(c)).toBe('noTool');
   });
 
   it('respects the weight limit', () => {
     const { c } = setup();
     c.location = 'mine';
-    c.vein = { res: 'ironOre', left: 5 };
+    c.node = { res: 'ironOre', left: 5 };
     c.pack.res.stone = 500;
     expect(packWeight(c.pack)).toBeGreaterThan(100);
-    expect(canMine(c)).toBe('overweight');
+    expect(canGather(c)).toBe('overweight');
   });
 
   it('pacing: active mining from 0 to 30 takes a reasonable time', () => {
@@ -119,7 +120,7 @@ describe('mining', () => {
     let ms = 0;
     let pulls = 0;
     while (c.skills.mining < 300 && pulls < 20000) {
-      if (!c.vein || c.vein.left <= 0) c.vein = findVein(c, rng);
+      if (!c.node || c.node.left <= 0) c.node = findNode(c, rng);
       c.stamina = 1e9;
       c.pack.res = {};
       c.pack.items[0].dur = 50;
@@ -166,14 +167,14 @@ describe('save', () => {
 
 import { canCraft, craft, craftChance, itemValue, repair, smelt } from './craft';
 import { RECIPES } from '../data/recipes';
-import { matches, sellToWanderer, spawnWanderer, tickWanderers, wandererPays } from './wanderers';
+import { deliverGoods, matches, sellToWanderer, spawnWanderer, tickWanderers, wandererPays } from './wanderers';
 
 describe('crafting', () => {
   const longsword = RECIPES.find((r) => r.id === 'longsword')!;
 
   it('craftsman starts with smithing and tinkering tools', () => {
     const { c } = setup();
-    expect(c.pack.items.map((i) => i.def).sort()).toEqual(['pickaxe', 'smithHammer', 'tinkerTools']);
+    expect(c.pack.items.map((i) => i.def).sort()).toEqual(['hatchet', 'pickaxe', 'smithHammer', 'tinkerTools']);
   });
 
   it('smelts two ore into a bar', () => {
@@ -245,7 +246,9 @@ describe('wanderers', () => {
     const now = Date.now();
     s.nextWandererAt = now;
     expect(tickWanderers(s, rng, now)).toBe(true);
-    const w = s.wanderers[0];
+    let w = s.wanderers[0];
+    while (!w.wants) w = spawnWanderer(s, rng, now);
+    s.wanderers = [w];
     const it = { uid: 999, def: w.wants, dur: 50, maxDur: 50, quality: 'exceptional' as const, mat: 'mithril' as const };
     c.pack.items.push(it);
     expect(matches(w, it)).toBe(true);
@@ -255,6 +258,13 @@ describe('wanderers', () => {
     expect(wandererPays(w, it)).toBeGreaterThan(w.offer);
     expect(s.reputation).toBe(1);
     expect(s.wanderers.length).toBe(0);
+    let g = spawnWanderer(s, rng, now);
+    while (!g.wantsRes) g = spawnWanderer(s, rng, now);
+    s.wanderers = [g];
+    expect(deliverGoods(s, c, g)).toBe(false);
+    c.pack.res[g.wantsRes.id] = g.wantsRes.n;
+    expect(deliverGoods(s, c, g)).toBe(true);
+    expect(c.pack.res[g.wantsRes.id]).toBeUndefined();
     s.wanderers.push(spawnWanderer(s, rng, now));
     tickWanderers(s, rng, now + 3_600_000);
     expect(s.wanderers.every((x) => x.leavesAt > now + 3_600_000)).toBe(true);

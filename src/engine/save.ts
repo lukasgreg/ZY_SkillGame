@@ -9,6 +9,11 @@ export function serialize(s: GameState): string {
 /** Migrations by version. Add one entry per bump of SAVE_VERSION. */
 const MIGRATIONS: Record<number, (s: any) => any> = {
   1: (s) => ({ ...s, version: 2, wanderers: [], nextWandererAt: Date.now() + 20_000, reputation: 0 }),
+  2: (s) => ({
+    ...s,
+    version: 3,
+    chars: s.chars.map(({ mineLevel, vein, ...c }: any) => ({ ...c, areas: { mine: mineLevel ?? 1, forest: 1, coast: 1, farm: 1 }, node: vein ?? null })),
+  }),
 };
 
 export function deserialize(json: string): GameState {
