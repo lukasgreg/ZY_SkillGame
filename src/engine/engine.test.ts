@@ -594,3 +594,21 @@ describe('taming and pets', () => {
     expect(c.pets[0].dead).toBe(false);
   });
 });
+
+import { canTrainSkill, trainSkill, trainSkillCost } from './town';
+
+describe('trainers', () => {
+  it('teach up to 30 within the profession cap, for rising gold', () => {
+    const { c } = setup();
+    c.gold = 100_000;
+    c.skills.fishing = 0;
+    const first = trainSkillCost(c, 'fishing');
+    while (trainSkill(c, 'fishing'));
+    expect(c.skills.fishing).toBe(300);
+    expect(trainSkillCost(c, 'fishing')).toBeGreaterThan(first);
+    c.skills.edged = 190; // craftsman cap 20
+    expect(trainSkill(c, 'edged')).toBe(true);
+    expect(c.skills.edged).toBe(200);
+    expect(canTrainSkill(c, 'edged')).toBe(false);
+  });
+});

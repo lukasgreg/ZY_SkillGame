@@ -363,3 +363,8 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .slots li { display: grid; grid-template-columns: 4.5em minmax(0, 1fr) minmax(80px, 1fr) auto; gap: 8px; align-items: center; }
 @media (max-width: 520px) { .slots li { grid-template-columns: 4.5em 1fr; } }
 .allies li { opacity: 1; } .allies { border-top: 1px dotted var(--brass); padding-top: 6px; }
+.skill-cap .train { padding: 0 6px; font-size: 11px; letter-spacing: 0; }
+@media (max-width: 760px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  .tab { white-space: nowrap; flex: none; }
+}

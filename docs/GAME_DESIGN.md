@@ -19,6 +19,26 @@
 | 8 | Setting | Our own world, the **Kingdom of Ardenhal** (section 12) |
 | 9 | Durability | **Every tool, weapon and armor piece wears out, and breaks for good if not repaired** (section 4b) |
 
+### Build status (2026-10-08)
+| Milestone | Status |
+|---|---|
+| M0 Scaffold, deploy workflow, save/export, EN/CZ | Done |
+| M1 Skill engine, stats, weight, mining | Done |
+| M2 Smelting, blacksmithing, tinkering, durability & repair, wanderers | Done |
+| M3 Lumberjacking, fishing, farming, carpentry, bowcraft, cooking, workers + offline progress | Done |
+| M4 Contracts, one-use plans, rare materials, runic crafting | Done |
+| M5/M6 Warrior combat with stances, dungeons, scouting, sealed passages, death & corpse | Done |
+| M7 Ranger taming, pets, loyalty, bonding, Call of the Wild | Done |
+| M8 NPC trainers, phone layout | Partly: no achievements, sound or insurance yet; balance needs real play |
+
+Differences from this plan, made while building:
+- Farming is click-to-harvest like the other gathering skills (no real-time crop growth).
+- Workers make one attempt per minute and wear tools slowly (15% per attempt); wages come from bank gold.
+- Plans are used up only when the craft succeeds; a failure costs the materials but keeps the plan.
+- Stances and their abilities are warrior-only; Call of the Wild is ranger-only.
+- Mine level 4 (Gnarl Halls) opens when the Gnarl Warrens boss falls. Level 3 is open from Mining 55.
+- Item insurance (6.4) and pet herding (7) are not built.
+
 ---
 
 ## 1. Hosting & tech

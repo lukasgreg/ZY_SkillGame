@@ -1,3 +1,6 @@
+import { skillCap } from '../data/professions';
+import { TOTAL_SKILL_CAP, type SkillId } from '../data/skills';
+import { totalSkills } from './skills';
 import { ITEMS, type ItemDefId } from '../data/items';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import { addRes, makeItem } from './character';
@@ -96,4 +99,26 @@ export function withdrawGold(s: GameState, c: Character, n: number): void {
   n = Math.min(n, s.bank.gold);
   s.bank.gold -= n;
   c.gold += n;
+}
+
+/** NPC trainers (Andaria): teach any skill up to 30.0, within your profession's limit. */
+export const TRAIN_LIMIT = 300;
+
+/** Gold for the next +1.0; rises 12% per point already known. */
+export function trainSkillCost(c: Character, id: SkillId): number {
+  return Math.round(4 * Math.pow(1.12, c.skills[id] / 10));
+}
+
+export function canTrainSkill(c: Character, id: SkillId): boolean {
+  const next = Math.min(c.skills[id] + 10, TRAIN_LIMIT);
+  return c.location === 'town' && next > c.skills[id] && next <= skillCap(c.profession, id) && c.gold >= trainSkillCost(c, id) && c.locks[id] !== 'locked';
+}
+
+export function trainSkill(c: Character, id: SkillId): boolean {
+  if (!canTrainSkill(c, id)) return false;
+  const gain = Math.min(c.skills[id] + 10, TRAIN_LIMIT) - c.skills[id];
+  if (totalSkills(c) + gain > TOTAL_SKILL_CAP) return false;
+  c.gold -= trainSkillCost(c, id);
+  c.skills[id] += gain;
+  return true;
 }

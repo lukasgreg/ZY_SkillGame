@@ -5,6 +5,10 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'skills.train': 'Train +1 · {p} gp',
+  'skills.trainTip': 'A trainer in Kamenbrod teaches the basics, up to 30.',
+  'skills.trainers': 'Kamenbrod’s trainers teach any skill up to 30.0 for gold (you have {g} gp). Above that, only practice helps.',
+  'log.trained': 'A trainer teaches you. {skill} is now {value}.',
   'mon.boar': 'Wild Boar',
   'mon.wolf': 'Grey Wolf',
   'mon.bear': 'Brown Bear',

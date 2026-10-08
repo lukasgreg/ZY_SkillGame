@@ -2,6 +2,10 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'skills.train': 'Učit +1 · {p} zl.',
+  'skills.trainTip': 'Učitel v Kamenbrodu naučí základy, až do 30.',
+  'skills.trainers': 'Kamenbrodští učitelé naučí jakoukoli dovednost do 30,0 za zlato (máš {g} zl.). Výš už pomůže jen praxe.',
+  'log.trained': 'Učitel tě vyučil. {skill} je nyní {value}.',
   'mon.boar': 'Divočák',
   'mon.wolf': 'Šedý vlk',
   'mon.bear': 'Medvěd hnědý',
