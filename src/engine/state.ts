@@ -5,7 +5,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon';
@@ -237,8 +237,8 @@ export interface GameState {
   version: number;
   chars: Character[];
   active: number | null;
-  /** Shared bank for all characters in this save. */
-  bank: Inventory & { gold: number };
+  /** Shared bank for all characters in this save; patterns live here so any character can use them. */
+  bank: Inventory & { gold: number; patterns: Record<string, number> };
   journal: LogEntry[];
   market: Partial<Record<ResourceId, MarketEntry>>;
   settings: { lang: 'en' | 'cs' };
@@ -297,7 +297,7 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     version: SAVE_VERSION,
     chars: [],
     active: null,
-    bank: { res: {}, items: [], gold: 0 },
+    bank: { res: {}, items: [], gold: 0, patterns: {} },
     journal: [],
     market: {},
     settings: { lang },

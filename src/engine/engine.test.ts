@@ -943,3 +943,38 @@ describe('bigger random dungeons', () => {
     expect(openBossChest(s, c, rng)).toBe(false);
   });
 });
+
+import { addPattern, commission, commissionCost, rollPattern } from './patterns';
+
+describe('patterns', () => {
+  it('rare metals need a pattern from the bank, used up on success', () => {
+    const { s, c } = setup();
+    const r = RECIPES.find((x) => x.id === 'longsword')!;
+    c.skills.blacksmithing = 1000;
+    c.pack.res.silverBar = 20;
+    expect(canCraft(c, r, 'silver', s)).toBe('noPattern');
+    expect(canCraft(c, r, 'steel', s)).not.toBe('noPattern');
+    addPattern(s, 'longsword', 'silver');
+    expect(canCraft(c, r, 'silver', s)).toBe(null);
+    const res = craft(s, c, r, 'silver', () => 0.01);
+    expect(res.item?.mat).toBe('silver');
+    expect(s.bank.patterns['longsword:silver']).toBeUndefined();
+  });
+
+  it('patterns from harder dungeons lean to rarer metals; the master craftsman is expensive', () => {
+    const rng = mulberry32(3);
+    const easy = Array.from({ length: 200 }, () => rollPattern(1, rng).metal);
+    const hard = Array.from({ length: 200 }, () => rollPattern(5, rng).metal);
+    const share = (xs: string[], m: string) => xs.filter((x) => x === m).length / xs.length;
+    expect(share(hard, 'blackrock')).toBeGreaterThan(share(easy, 'blackrock'));
+    const { s } = warrior();
+    const c = s.chars[0];
+    addPattern(s, 'mace', 'silver');
+    const cost = commissionCost('mace', 'silver');
+    expect(cost).toBeGreaterThan(300);
+    c.gold = cost;
+    const it = commission(s, c, 'mace:silver', rng)!;
+    expect(it.mat).toBe('silver');
+    expect(c.gold).toBe(0);
+  });
+});

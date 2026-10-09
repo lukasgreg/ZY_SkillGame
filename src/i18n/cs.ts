@@ -2,6 +2,14 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'pattern.title': 'Vzory a mistr řemeslník',
+  'pattern.note': 'Vzácné kovy (stříbro, zlato, temné železo, mithril, černá skála) potřebují pro každý kus vzor. Vzory pocházejí z truhel pánů doupat a leží ve společné bance. Řemeslník je použije v dílně; kdokoli jiný může zaplatit mistru řemeslníkovi, který si řekne o hodně.',
+  'pattern.none': 'Zatím žádné vzory. Porážej pány doupat a otevírej jejich truhly.',
+  'pattern.commission': 'Objednat · {p} zl.',
+  'forge.patterns': 'vzory {n}',
+  'forge.block.noPattern': 'Pro tento kov je potřeba vzor',
+  'dun.chestPattern': 'V truhle: vzor na {item}!',
+  'log.commission': 'Mistr řemeslník předává: {item}.',
   'mon.spider': 'Obří pavouk',
   'mon.yeti': 'Yetti',
   'mon.banshee': 'Banšie',

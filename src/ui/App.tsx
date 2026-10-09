@@ -71,7 +71,7 @@ export function App() {
         <>
           {tab === 'gather' && <GatherPanel s={s} c={c} />}
           {tab === 'town' && <TownPanel s={s} c={c} />}
-          {tab === 'forge' && <ForgePanel c={c} />}
+          {tab === 'forge' && <ForgePanel s={s} c={c} />}
         </>
       )}
       {tab === 'dungeon' && <DungeonPanel s={s} c={c} />}

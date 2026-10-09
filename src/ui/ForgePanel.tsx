@@ -5,7 +5,7 @@ import { SMELTING, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
 import { canCraft, canRunic, craftChance, exceptionalChance, findTool, recipeInputs, recipeRange, repairInfo, smeltChance } from '../engine/craft';
 import { FRAGMENTS_PER_PLAN, PLANS, PLAN_IDS } from '../data/plans';
-import type { Character } from '../engine/state';
+import type { Character, GameState } from '../engine/state';
 import { itemName, nameOf, num, t } from '../i18n';
 import { combine, craftFromPlan, craftItem, fortifyItem, repairOwn, smeltOre, stopQueue, travel } from './actions';
 import { Card, Durability } from './common';
@@ -36,10 +36,11 @@ export function WorkBar() {
   );
 }
 
-function RecipeRow({ c, r, metal, runic }: { c: Character; r: Recipe; metal: MetalId | null; runic: boolean }) {
+function RecipeRow({ s, c, r, metal, runic }: { s: GameState; c: Character; r: Recipe; metal: MetalId | null; runic: boolean }) {
   const busy = !!transient.busy;
   const [min, max] = recipeRange(r, metal);
-  const block = canCraft(c, r, metal);
+  const block = canCraft(c, r, metal, s);
+  const patterns = 'item' in r.out && metal && METALS[metal].rare ? s.bank.patterns[`${r.out.item}:${metal}`] ?? 0 : null;
   const skill = c.skills[r.skill] / 10;
   const name = 'item' in r.out ? itemName(r.out.item, metal) : t(`res.${r.out.res}`);
   const inputs = recipeInputs(r, metal);
@@ -48,6 +49,7 @@ function RecipeRow({ c, r, metal, runic }: { c: Character; r: Recipe; metal: Met
       <div class="recipe-head">
         <strong>{name}</strong>
         <span class="muted small">
+          {patterns !== null && <span class={patterns ? 'good' : ''}>{t('forge.patterns', { n: patterns })} · </span>}
           {num(min)}–{num(max)}
         </span>
       </div>
@@ -59,7 +61,9 @@ function RecipeRow({ c, r, metal, runic }: { c: Character; r: Recipe; metal: Met
         ))}
       </div>
       <div class="recipe-foot">
-        {block === 'noSkill' ? (
+        {block === 'noPattern' ? (
+          <span class="muted small">{t('forge.block.noPattern')}</span>
+        ) : block === 'noSkill' ? (
           <span class="muted small">{t('forge.block.noSkill', { skill: t(`skill.${r.skill}`), n: min })}</span>
         ) : block === 'noTool' ? (
           <span class="warn small">{t('forge.block.noTool', { tool: itemName(r.tool) })}</span>
@@ -152,7 +156,7 @@ function PlansCard({ c }: { c: Character }) {
   );
 }
 
-export function ForgePanel({ c }: { c: Character }) {
+export function ForgePanel({ s, c }: { s: GameState; c: Character }) {
   const [skill, setSkill] = useState<SkillId>('blacksmithing');
   const [metal, setMetal] = useState<MetalId>('iron');
   const [runic, setRunic] = useState(false);
@@ -205,7 +209,7 @@ export function ForgePanel({ c }: { c: Character }) {
           <WorkBar />
           <ul class="recipes">
             {recipes.map((r) => (
-              <RecipeRow key={r.id} c={c} r={r} metal={r.bars ? metal : null} runic={runic} />
+              <RecipeRow key={r.id} s={s} c={c} r={r} metal={r.bars ? metal : null} runic={runic} />
             ))}
           </ul>
         </Card>

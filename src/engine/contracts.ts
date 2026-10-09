@@ -41,7 +41,7 @@ export function makeContract(c: Character, rng: Rng, now: number): Contract | nu
     n = randInt(rng, 5, 12);
     exceptional = chance(rng, lvl >= 60 ? 0.35 : 0.1);
     if (r.bars && lvl >= 40 && chance(rng, 0.4)) {
-      const metals = METAL_IDS.filter((m) => m !== 'iron' && METALS[m].offset <= lvl - r.min);
+      const metals = METAL_IDS.filter((m) => m !== 'iron' && !METALS[m].rare && METALS[m].offset <= lvl - r.min);
       minMat = metals.length ? metals[Math.floor(rng() * metals.length)] : null;
     }
     unit = ITEMS[wants].price * (minMat ? METALS[minMat].priceMult : 1) * (exceptional ? 2.5 : 1);

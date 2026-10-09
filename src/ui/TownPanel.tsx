@@ -7,6 +7,8 @@ import { itemName, nameOf, num, t } from '../i18n';
 import { bankAll, buy, buyResource, deliver, repair, sell, sellToSmith, sellWanderer, travel } from './actions';
 import { Card, Durability } from './common';
 import { ContractBoard } from './Contracts';
+import { commissionCost, parsePattern } from '../engine/patterns';
+import { commissionPattern } from './actions';
 import { Pack } from './Pack';
 import { transient, update } from './store';
 
@@ -198,6 +200,7 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
 
       <div class="stack">
         <ContractBoard s={s} c={c} />
+        <MasterCraftsman s={s} c={c} />
         <Card title={t('town.bank')} note={t('town.bankNote')}>
           <div class="row">
             <button class="btn" disabled={sellable.length === 0} onClick={bankAll}>
@@ -238,5 +241,38 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
         <Pack c={c} />
       </div>
     </div>
+  );
+}
+
+/** Patterns in the shared bank, and the master craftsman who makes them for a high price. */
+function MasterCraftsman({ s, c }: { s: GameState; c: Character }) {
+  const keys = Object.keys(s.bank.patterns);
+  return (
+    <Card title={t('pattern.title')} note={t('pattern.note')}>
+      {keys.length === 0 ? (
+        <p class="muted small">{t('pattern.none')}</p>
+      ) : (
+        <table class="trade">
+          <tbody>
+            {keys.map((k) => {
+              const { def, metal } = parsePattern(k);
+              const cost = commissionCost(def, metal);
+              return (
+                <tr key={k}>
+                  <th>
+                    {itemName(def, metal)} <span class="muted">×{s.bank.patterns[k]}</span>
+                  </th>
+                  <td class="actions">
+                    <button class="btn btn-small" disabled={c.gold < cost} onClick={() => commissionPattern(k)}>
+                      {t('pattern.commission', { p: num(cost) })}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </Card>
   );
 }

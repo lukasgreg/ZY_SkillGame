@@ -34,6 +34,7 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
   9: (s) => migrateArmour(s),
   // v11 only adds optional fields (omens, events, affixes); runs in progress keep working.
   10: (s) => ({ ...s, version: 11 }),
+  11: (s) => ({ ...s, version: 12, bank: { ...s.bank, patterns: {} } }),
 };
 
 /** v9 → v10: the four old armour items become pieces of the new families; the body slot becomes chest. */

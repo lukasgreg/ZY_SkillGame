@@ -5,6 +5,7 @@ import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
 import { feed, healPet, release, resurrect } from '../engine/pets';
 import { bump } from '../engine/achievements';
+import { commission } from '../engine/patterns';
 import { chooseEvent, goBack, openBossChest } from '../engine/dungeon';
 import { camp, enter, fight, here, leave, lootCorpse, move, reengage, scout, useRepairKit, wayHome } from '../engine/dungeon';
 import { PLANS, type PlanId } from '../data/plans';
@@ -209,11 +210,11 @@ export function smeltOre(ore: ResourceId, n: number): void {
 
 export function craftItem(r: Recipe, metal: MetalId | null, n: number, runic = false): void {
   const c = activeChar(getState());
-  if (!c || c.location !== 'town' || canCraft(c, r, metal)) return;
+  if (!c || c.location !== 'town' || canCraft(c, r, metal, getState())) return;
   repeat('craft', n, () => workTime(c), () => {
     let more = false;
     withChar((s, c) => {
-      if (canCraft(c, r, metal)) return;
+      if (canCraft(c, r, metal, s)) return;
       const res = craft(s, c, r, metal, rng, new Date(), runic);
       if (res.ok) bump(s, 'crafts');
       if (res.item?.quality === 'exceptional') bump(s, 'exceptional');
@@ -223,7 +224,7 @@ export function craftItem(r: Recipe, metal: MetalId | null, n: number, runic = f
       else log(s, 'log.craft.fail', undefined, 'bad');
       noteGains(s, c, r.skill, res.gain, res.stat);
       if (res.toolBroke) log(s, 'log.tool.broke', { item: itemParam({ def: res.toolBroke }) }, 'bad');
-      more = canCraft(c, r, metal) === null;
+      more = canCraft(c, r, metal, s) === null;
     });
     return more;
   });
@@ -485,5 +486,12 @@ export function openChest(): void {
   withChar((s, c) => {
     const d = c.run?.dungeon;
     if (openBossChest(s, c, rng)) log(s, 'log.dun.chest', { d: `@dun.${d}` }, 'gain');
+  });
+}
+
+export function commissionPattern(key: string): void {
+  withChar((s, c) => {
+    const it = commission(s, c, key, rng);
+    if (it) log(s, 'log.commission', { item: itemParam(it) }, 'gain');
   });
 }

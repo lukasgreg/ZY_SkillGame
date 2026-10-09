@@ -5,6 +5,14 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'pattern.title': 'Patterns & the master craftsman',
+  'pattern.note': 'Rare metals (silver, gold, dark iron, mithril, blackrock) need a pattern for each piece. Patterns come from boss chests and sit in the shared bank. A craftsman uses them in the workshop; anyone else can pay the master craftsman, who charges dearly.',
+  'pattern.none': 'No patterns yet. Defeat dungeon bosses and open their chests.',
+  'pattern.commission': 'Commission · {p} gp',
+  'forge.patterns': 'patterns {n}',
+  'forge.block.noPattern': 'Needs a pattern for this metal',
+  'dun.chestPattern': 'In the chest: a pattern for {item}!',
+  'log.commission': 'The master craftsman delivers: {item}.',
   'mon.spider': 'Giant Spider',
   'mon.yeti': 'Yeti',
   'mon.banshee': 'Banshee',

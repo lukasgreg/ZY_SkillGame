@@ -9,6 +9,7 @@ import { PLAN_WEIGHTS } from '../data/plans';
 import { RECIPES } from '../data/recipes';
 import type { ResourceId } from '../data/resources';
 import { makeCrafted } from './craft';
+import { addPattern, rollPattern } from './patterns';
 import type { Character, DNode, Foe, GameState, LogEntry, RoomType, Run } from './state';
 
 /* ---------------- map generation (seeded) ---------------- */
@@ -545,6 +546,11 @@ export function openBossChest(s: GameState, c: Character, rng: Rng): boolean {
   const rn = randInt(rng, 1, d.skulls);
   addRes(c.pack, rare, rn);
   say(run, 'fight.drop', { n: rn, res: `@res.${rare}` }, 'gain');
+  if (rng() < 0.2 + d.skulls * 0.12) {
+    const p = rollPattern(d.skulls, rng);
+    addPattern(s, p.def, p.metal);
+    say(run, 'dun.chestPattern', { item: `%${p.def}|${p.metal}|0|0` }, 'gain');
+  }
   if (rng() < 0.25) {
     const plan = pickWeighted(rng, PLAN_WEIGHTS)!;
     c.plans[plan] = (c.plans[plan] ?? 0) + 1;

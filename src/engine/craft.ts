@@ -76,10 +76,12 @@ export function recipeInputs(r: Recipe, metal: MetalId | null): [ResourceId, num
   return out;
 }
 
-export type CraftBlock = 'noTool' | 'noSkill' | 'noMaterials';
+export type CraftBlock = 'noTool' | 'noSkill' | 'noMaterials' | 'noPattern';
 
-export function canCraft(c: Character, r: Recipe, metal: MetalId | null): CraftBlock | null {
+/** `s` is needed to check patterns for rare metals; without it the pattern check is skipped. */
+export function canCraft(c: Character, r: Recipe, metal: MetalId | null, s?: GameState): CraftBlock | null {
   if (!findTool(c, r.tool)) return 'noTool';
+  if (s && 'item' in r.out && metal && METALS[metal].rare && !(s.bank.patterns[`${r.out.item}:${metal}`] ?? 0)) return 'noPattern';
   if (c.skills[r.skill] / 10 < recipeRange(r, metal)[0]) return 'noSkill';
   if (recipeInputs(r, metal).some(([id, n]) => (c.pack.res[id] ?? 0) < n)) return 'noMaterials';
   return null;
@@ -126,6 +128,11 @@ export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | nu
     for (const [id, n] of inputs) addRes(c.pack, id, -n);
     if ('item' in r.out) {
       item = makeCrafted(s, r.out.item, metal, rng() < exceptionalChance(c, r, metal));
+      if (metal && METALS[metal].rare) {
+        const k = `${r.out.item}:${metal}`;
+        s.bank.patterns[k] = (s.bank.patterns[k] ?? 1) - 1;
+        if (s.bank.patterns[k] <= 0) delete s.bank.patterns[k];
+      }
       if (runic && canRunic(c, r)) {
         item.runic = true;
         item.maxDur = Math.round(item.maxDur * 1.5);

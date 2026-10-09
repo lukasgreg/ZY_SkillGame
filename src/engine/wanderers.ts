@@ -49,7 +49,7 @@ export function spawnWanderer(s: GameState, rng: Rng, now: number): Wanderer {
   const wants = (r.out as { item: ItemDefId }).item;
   let minMat: MetalId | null = null;
   if (ITEMS[wants].metal && chance(rng, tier * 0.1)) {
-    const metals = METAL_IDS.filter((m) => m !== 'iron' && METALS[m].offset <= tier * 9);
+    const metals = METAL_IDS.filter((m) => m !== 'iron' && !METALS[m].rare && METALS[m].offset <= tier * 9);
     minMat = pickWeighted(rng, metals.map((m) => [m, 1] as const));
   }
   const exceptional = chance(rng, 0.12 + tier * 0.05);
