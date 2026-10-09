@@ -675,6 +675,7 @@ import { checkAchievements } from './achievements';
 describe('achievements', () => {
   it('unlock once, from stats and from the state of the world', () => {
     const { s, c } = setup();
+    c.level = 1;
     c.skills.mining = 200;
     for (const id of SKILL_IDS) if (c.skills[id] >= 300) c.skills[id] = 0;
     expect(checkAchievements(s)).toEqual([]);

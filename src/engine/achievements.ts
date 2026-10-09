@@ -1,6 +1,9 @@
 import { DUNGEON_IDS } from '../data/dungeons';
 import { SKILL_IDS } from '../data/skills';
 import { MAX_BUNKHOUSE } from './workers';
+import { METALS, METAL_IDS } from '../data/items';
+
+const RARE = METAL_IDS.filter((m) => METALS[m].rare);
 import { log, type GameState, type Stats } from './state';
 
 export type AchievementGroup = 'work' | 'skill' | 'craft' | 'trade' | 'adventure' | 'wild';
@@ -55,7 +58,21 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   a('died', 'adventure', (s) => s.stats.deaths >= 1, true),
   a('recovered', 'adventure', (s) => s.stats.recovered >= 1, true),
 
+  a('level10', 'skill', (s) => s.chars.some((c) => c.level >= 10)),
+  a('level25', 'skill', (s) => s.chars.some((c) => c.level >= 25)),
+  a('level50', 'skill', (s) => s.chars.some((c) => c.level >= 50)),
+  a('firstPotion', 'craft', (s) => (s.stats.potions ?? 0) >= 1),
+  a('potions100', 'craft', (s) => (s.stats.potions ?? 0) >= 100),
+  a('pattern', 'craft', (s) => (s.stats.patternsUsed ?? 0) >= 1),
+  a('rareMetals', 'craft', (s) => RARE.every((m) => s.chars.some((c) => c.pack.items.some((i) => i.mat === m)))),
+  a('cottage', 'work', (s) => !!s.house),
+  a('keep', 'work', (s) => s.house?.tier === 'keep'),
+  a('paragon', 'adventure', (s) => (s.stats.paragons ?? 0) >= 1),
+  a('paragons10', 'adventure', (s) => (s.stats.paragons ?? 0) >= 10),
+  a('chests10', 'adventure', (s) => (s.stats.chests ?? 0) >= 10),
   a('tame', 'wild', (s) => s.stats.tamed >= 1),
+  a('petLevel10', 'wild', (s) => s.chars.some((c) => c.pets.some((p) => (p.level ?? 1) >= 10))),
+  a('petLevel25', 'wild', (s) => s.chars.some((c) => c.pets.some((p) => (p.level ?? 1) >= 25))),
   a('bonded', 'wild', (s) => s.chars.some((c) => c.pets.some((p) => p.bonded))),
   a('fullPack', 'wild', (s) => s.chars.some((c) => c.pets.length >= 3)),
 ];

@@ -1,4 +1,4 @@
-import { ITEMS, type ItemDefId, type MetalId } from '../data/items';
+import { ITEMS, METALS, type ItemDefId, type MetalId } from '../data/items';
 import type { Recipe } from '../data/recipes';
 import type { DungeonId } from '../data/dungeons';
 import type { Slot } from '../data/items';
@@ -219,6 +219,8 @@ export function craftItem(r: Recipe, metal: MetalId | null, n: number, runic = f
       if (canCraft(c, r, metal, s)) return;
       const res = craft(s, c, r, metal, rng, new Date(), runic);
       if (res.ok) bump(s, 'crafts');
+      if (res.ok && r.skill === 'alchemy' && res.res) s.stats.potions = (s.stats.potions ?? 0) + res.res.n;
+      if (res.ok && metal && METALS[metal].rare) s.stats.patternsUsed = (s.stats.patternsUsed ?? 0) + 1;
       if (res.item?.quality === 'exceptional') bump(s, 'exceptional');
       if (res.item?.runic) bump(s, 'runic');
       if (res.item) log(s, res.item.quality === 'exceptional' ? 'log.craft.exc' : 'log.craft.ok', { item: itemParam(res.item) }, res.item.quality === 'exceptional' ? 'gain' : undefined);
@@ -487,14 +489,19 @@ export function stepBack(): void {
 export function openChest(): void {
   withChar((s, c) => {
     const d = c.run?.dungeon;
-    if (openBossChest(s, c, rng)) log(s, 'log.dun.chest', { d: `@dun.${d}` }, 'gain');
+    if (openBossChest(s, c, rng)) {
+      s.stats.chests = (s.stats.chests ?? 0) + 1;
+      log(s, 'log.dun.chest', { d: `@dun.${d}` }, 'gain');
+    }
   });
 }
 
 export function commissionPattern(key: string): void {
   withChar((s, c) => {
     const it = commission(s, c, key, rng);
-    if (it) log(s, 'log.commission', { item: itemParam(it) }, 'gain');
+    if (!it) return;
+    s.stats.patternsUsed = (s.stats.patternsUsed ?? 0) + 1;
+    log(s, 'log.commission', { item: itemParam(it) }, 'gain');
   });
 }
 
