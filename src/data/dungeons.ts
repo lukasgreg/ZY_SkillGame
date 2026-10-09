@@ -8,6 +8,7 @@ export const MONSTER_IDS = [
   'gnarlScout', 'gnarlBrute', 'gnarlShaman', 'gnarlWarlord',
   'boar', 'wolf', 'bear', 'direwolf', 'drake',
   'spider', 'yeti', 'banshee', 'mummy', 'gnarlArcher', 'stag',
+  'chicken', 'cat', 'goat', 'dog', 'grizzly',
 ] as const;
 export type MonsterId = (typeof MONSTER_IDS)[number];
 
@@ -36,6 +37,7 @@ const FAMILY: Record<MonsterId, Family> = {
   gnarlScout: 'gnarl', gnarlBrute: 'gnarl', gnarlShaman: 'gnarl', gnarlWarlord: 'gnarl',
   boar: 'beast', wolf: 'beast', bear: 'beast', direwolf: 'beast', drake: 'dragon',
   spider: 'beast', yeti: 'beast', banshee: 'undead', mummy: 'undead', gnarlArcher: 'gnarl', stag: 'beast',
+  chicken: 'beast', cat: 'beast', goat: 'beast', dog: 'beast', grizzly: 'beast',
 };
 
 const m = (id: MonsterId, hp: number, skill: number, dmg: [number, number], armor: number, speed: number, gold: [number, number], drops?: MonsterDef['drops']): MonsterDef => ({
@@ -79,6 +81,11 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
   mummy: m('mummy', 85, 62, [10, 17], 4, 4, [20, 45], [['bone', 0.7, 1, 3], ['flax', 0.5, 2, 5]]),
   gnarlArcher: m('gnarlArcher', 70, 72, [12, 20], 3, 13, [18, 40], [['arrow', 0.8, 5, 15], ['gnarlTusk', 0.5, 1, 2]]),
   stag: m('stag', 40, 36, [5, 11], 1, 15, [0, 2], [['hide', 0.9, 1, 3]]),
+  chicken: m('chicken', 8, 5, [1, 2], 0, 10, [0, 0], [['feather', 1, 2, 5]]),
+  cat: m('cat', 14, 18, [2, 5], 0, 16, [0, 0]),
+  goat: m('goat', 22, 16, [2, 6], 1, 9, [0, 0], [['hide', 0.6, 1, 1]]),
+  dog: m('dog', 30, 28, [3, 8], 0, 13, [0, 0]),
+  grizzly: m('grizzly', 120, 64, [12, 21], 3, 8, [0, 6], [['hide', 0.9, 2, 5]]),
 };
 
 /** Random twists on a monster, more likely deeper and in harder dungeons (docs/PLAN_V2.md, phase D). */
@@ -92,19 +99,42 @@ export type Omen = (typeof OMEN_IDS)[number];
 export const EVENT_IDS = ['adventurer', 'fountain', 'altar', 'merchant', 'tunnel', 'lair'] as const;
 export type EventId = (typeof EVENT_IDS)[number];
 
-/** Animals a ranger can tame (design 7): Taming needed and control slots used (max 5). */
-export const TAMEABLE: Partial<Record<MonsterId, { min: number; slots: number }>> = {
-  rat: { min: 0, slots: 1 },
-  iceBat: { min: 15, slots: 1 },
-  boar: { min: 20, slots: 1 },
-  wolf: { min: 30, slots: 1 },
-  frostWolf: { min: 40, slots: 1 },
-  bear: { min: 50, slots: 2 },
-  direwolf: { min: 65, slots: 2 },
-  drake: { min: 85, slots: 3 },
+/**
+ * Animals that can be tamed (docs/PLAN_V2.md, phase F): Taming needed, control slots used, and whether a
+ * failed attempt is likely to make them attack. Slots come from Intelligence (10 at 100 INT).
+ */
+export const TAMEABLE: Partial<Record<MonsterId, { min: number; slots: number; fierce: boolean }>> = {
+  chicken: { min: 0, slots: 1, fierce: false },
+  cat: { min: 5, slots: 1, fierce: false },
+  goat: { min: 10, slots: 1, fierce: false },
+  rat: { min: 0, slots: 1, fierce: false },
+  dog: { min: 15, slots: 2, fierce: false },
+  iceBat: { min: 20, slots: 1, fierce: false },
+  boar: { min: 22, slots: 2, fierce: true },
+  stag: { min: 28, slots: 2, fierce: false },
+  wolf: { min: 32, slots: 3, fierce: true },
+  frostWolf: { min: 45, slots: 4, fierce: true },
+  bear: { min: 52, slots: 5, fierce: true },
+  direwolf: { min: 66, slots: 6, fierce: true },
+  grizzly: { min: 76, slots: 8, fierce: true },
+  drake: { min: 90, slots: 10, fierce: true },
 };
 
-export const MAX_CONTROL_SLOTS = 5;
+export const MAX_CONTROL_SLOTS = 10;
+
+/** Where rangers track animals: each area's animals with spawn weights, and the Tracking needed to enter. */
+export interface WildArea {
+  id: 1 | 2 | 3 | 4;
+  need: number;
+  animals: [MonsterId, number][];
+}
+
+export const WILD_AREAS: WildArea[] = [
+  { id: 1, need: 0, animals: [['chicken', 5], ['goat', 4], ['cat', 3], ['dog', 3], ['stag', 1]] },
+  { id: 2, need: 20, animals: [['boar', 4], ['stag', 4], ['wolf', 3], ['bear', 1]] },
+  { id: 3, need: 45, animals: [['wolf', 2], ['frostWolf', 4], ['bear', 3], ['grizzly', 1]] },
+  { id: 4, need: 65, animals: [['frostWolf', 2], ['bear', 2], ['direwolf', 3], ['grizzly', 2]] },
+];
 
 export const DUNGEON_IDS = ['wilds', 'cellar', 'frostCave', 'manor', 'crypt', 'warrens'] as const;
 export type DungeonId = (typeof DUNGEON_IDS)[number];

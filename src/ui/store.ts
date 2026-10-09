@@ -22,9 +22,11 @@ export interface ToastItem {
 
 /** UI-only state that is never saved (an action in progress, flashes). */
 export interface Transient {
-  busy: null | { kind: 'mine' | 'search' | 'travel' | 'smelt' | 'craft' | 'repair' | 'fight'; start: number; dur: number; label?: string };
+  busy: null | { kind: 'mine' | 'search' | 'travel' | 'smelt' | 'craft' | 'repair' | 'fight' | 'tame' | 'vet'; start: number; dur: number; label?: string };
   /** Repeats left in a craft/smelt batch; set to 0 to stop after the current one. */
   queue: number;
+  /** Which calming phrase is showing while taming. */
+  phrase: number;
   /** Last skill gain, for the floating "+0.1" flash. */
   flash: null | { text: string; id: number };
   /** Newly earned achievements, shown as a banner for a few seconds. */
@@ -59,7 +61,7 @@ export function scheduleSave(): void {
   saveTimer = window.setTimeout(() => saveLocal(state), 400);
 }
 
-export const transient: Transient = { busy: null, queue: 0, flash: null, toast: null };
+export const transient: Transient = { busy: null, queue: 0, phrase: 0, flash: null, toast: null };
 let toastSeq = 0;
 
 /** Shows a banner (achievement earned, level reached) for a few seconds. */

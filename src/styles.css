@@ -419,3 +419,5 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .affix { color: var(--rust); font-weight: 600; }
 .event p { margin: 0 0 6px; }
 .map-wrap { scroll-behavior: smooth; }
+.phrase { font-style: italic; color: var(--umber); margin: 6px 0; min-height: 1.4em; }
+.quarry { display: grid; justify-items: center; gap: 4px; text-align: center; }

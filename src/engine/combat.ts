@@ -1,5 +1,5 @@
-import { MONSTERS, TAMEABLE, type Family, type MonsterId } from '../data/dungeons';
-import { canControl, healPet, petMaxHp, petSkillCap, tryTame } from './pets';
+import { MONSTERS, type Family, type MonsterId } from '../data/dungeons';
+import { healPet, petDmgMult, petMaxHp, petSkillCap } from './pets';
 import { ARMOUR_SLOTS, ITEMS, METALS, itemWeight, minStr, slotOf, type Slot } from '../data/items';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
@@ -151,7 +151,6 @@ export type Action =
   | { type: 'ability'; id: Ability }
   | { type: 'bandage' }
   | { type: 'eat'; res: ResourceId }
-  | { type: 'tame' }
   | { type: 'healPet' }
   | { type: 'wait' }
   | { type: 'flee' };
@@ -265,7 +264,8 @@ function allyAttack(c: Character, run: Run, cb: Combat, a: Ally, rng: Rng): void
     say(run, 'fight.allyMiss', { ally: allyName(a), foe: foeName(target) });
     return;
   }
-  const dmg = Math.max(1, Math.round(randInt(rng, me.dmg[0], me.dmg[1]) * (0.8 + skill / 500 + c.skills.animalLore / 4000) - mon.armor * 0.5));
+  const lvl = 'pet' in a ? petDmgMult(a.pet) : 1;
+  const dmg = Math.max(1, Math.round(randInt(rng, me.dmg[0], me.dmg[1]) * lvl * (0.8 + skill / 500 + c.skills.animalLore / 4000) - mon.armor * 0.5));
   target.hp -= dmg;
   say(run, 'fight.allyHit', { ally: allyName(a), foe: foeName(target), dmg }, 'good');
   if (target.hp <= 0) {
@@ -447,21 +447,6 @@ function myTurn(c: Character, run: Run, cb: Combat, action: Action, rng: Rng): '
         cb.summon = { kind, hp: MONSTERS[kind].hp, stunned: 0 };
         say(run, 'fight.summoned', { ally: `@mon.${kind}` }, 'good');
       } else cb.cowed = 2;
-      return;
-    }
-    case 'tame': {
-      const target = cb.foes.find((f) => f.hp > 0 && TAMEABLE[f.kind]);
-      if (!target) return;
-      if (!canControl(c, target.kind)) {
-        say(run, 'fight.tameNoSlots', { foe: foeName(target) }, 'bad');
-        return;
-      }
-      const pet = tryTame(c, target.kind, rng);
-      if (pet) {
-        pet.hp = Math.max(1, target.hp);
-        cb.foes = cb.foes.filter((f) => f !== target);
-        say(run, 'fight.tamed', { foe: foeName(target) }, 'gain');
-      } else say(run, 'fight.tameFailed', { foe: foeName(target) }, 'bad');
       return;
     }
     case 'healPet': {

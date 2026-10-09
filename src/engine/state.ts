@@ -5,10 +5,10 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export type Lock = 'up' | 'down' | 'locked';
-export type Location = 'town' | GatherLoc | 'dungeon';
+export type Location = 'town' | GatherLoc | 'dungeon' | 'wilds';
 export type Stance = 'normal' | 'combat' | 'defensive';
 
 export interface ItemInstance {
@@ -65,6 +65,9 @@ export interface Character {
   /** Where this character last died, until it decays. */
   corpse: Corpse | null;
   pets: Pet[];
+  /** Hunting area in the Wilds and the animal you are tracking, if any. */
+  wildsArea: 1 | 2 | 3 | 4;
+  quarry: MonsterId | null;
   /** One-use plans owned, by count. */
   plans: Partial<Record<PlanId, number>>;
   /** uid of the preferred tool in hand, if any. */
@@ -163,6 +166,9 @@ export interface Pet {
   bonded: boolean;
   /** A bonded pet that died: it waits as a spirit until Animal Healing brings it back. */
   dead: boolean;
+  /** Pet levels 1–30 (docs/PLAN_V2.md, phase G). */
+  level: number;
+  xp: number;
 }
 
 export interface Combat {

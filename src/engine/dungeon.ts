@@ -9,6 +9,7 @@ import { PLAN_WEIGHTS } from '../data/plans';
 import { RECIPES } from '../data/recipes';
 import type { ResourceId } from '../data/resources';
 import { makeCrafted } from './craft';
+import { canControl, gainPetXp, tryTame } from './pets';
 import { addPattern, rollPattern } from './patterns';
 import type { Character, DNode, Foe, GameState, LogEntry, RoomType, Run } from './state';
 
@@ -388,7 +389,7 @@ export const EVENT_CHOICES: Record<EventId, string[]> = {
   altar: ['offer', 'smash', 'leave'],
   merchant: ['buyScroll', 'buyKit', 'leave'],
   tunnel: ['dig', 'leave'],
-  lair: ['sneak', 'fight', 'leave'],
+  lair: ['sneak', 'tame', 'fight', 'leave'],
 };
 
 export function eventCost(run: Run, ev: EventId, choice: string): number {
@@ -490,6 +491,25 @@ export function chooseEvent(s: GameState, c: Character, choice: string, rng: Rng
         return true;
       }
       break;
+    case 'lair.tame': {
+      const k = lairBeast(run);
+      if (!canControl(c, k)) {
+        say(run, 'fight.tameNoSlots', { foe: `@mon.${k}` }, 'bad');
+        return false;
+      }
+      const r = tryTame(c, k, rng);
+      if (r.ok) {
+        say(run, 'fight.tamed', { foe: `@mon.${k}` }, 'gain');
+        s.stats.tamed += 1;
+        break;
+      }
+      say(run, 'event.lair.tameFailed', { foe: `@mon.${k}` }, 'bad');
+      done();
+      node.foes = [{ kind: k, hp: MONSTERS[k].hp, max: MONSTERS[k].hp, stunned: 0 }];
+      node.foesAt = Date.now();
+      engage(run, node);
+      return true;
+    }
     case 'lair.fight': {
       done();
       const k = lairBeast(run);
@@ -578,6 +598,11 @@ export function fight(s: GameState, c: Character, action: Action, rng: Rng): Out
     if (xp) {
       gainXp(c, xp);
       say(run, 'fight.xp', { n: xp }, 'gain');
+      // Pets that fought share about 70% of it (docs/PLAN_V2.md, phase G).
+      const team = c.pets.filter((p) => !p.dead && p.hp > 0);
+      for (const p of team) {
+        if (gainPetXp(p, Math.round((xp * 0.7) / team.length))) say(run, 'fight.petLevel', { pet: `@mon.${p.kind}`, n: p.level }, 'gain');
+      }
     }
     run.combat = null;
     node.cleared = true;

@@ -12,8 +12,8 @@ and puts every new string in both `src/i18n/en.ts` and `src/i18n/cs.ts`.
 | C | UO armour pieces, paperdoll, weight drains stamina | done |
 | D | Random dungeons: visible rooms, events, omens, affixes, final chest, loot items | done |
 | E | Patterns for rare metals, hiring a master craftsman | done |
-| F | Taming in the wild, INT-based control slots, better animal healing | not started |
-| G | Pet experience and levels | not started |
+| F | Taming in the wild, INT-based control slots, better animal healing | done |
+| G | Pet experience and levels | done |
 
 ---
 

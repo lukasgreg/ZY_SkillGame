@@ -6,6 +6,7 @@ import { itemName, nameOf, num, t } from '../i18n';
 import { gather, hold, searchNode, setArea, travel } from './actions';
 import { Card, Durability, JournalLines } from './common';
 import { Pack } from './Pack';
+import { WildsPanel } from './WildsPanel';
 import { transient } from './store';
 
 /** Fleck colour for each resource in the node engraving. */
@@ -111,6 +112,19 @@ function Destinations({ c }: { c: Character }) {
               </li>
             );
           })}
+          <li>
+            <div>
+              <strong>{t('loc.wilds')}</strong>
+              <span class="muted small">
+                {' '}
+                · {t('skill.taming')} {num(c.skills.taming / 10, 1)}
+              </span>
+              <div class="small muted">{t('wilds.dest')}</div>
+            </div>
+            <button class="btn btn-primary btn-small" disabled={!!busy} onClick={() => travel('wilds')}>
+              {busy?.kind === 'travel' ? t('mine.walking') : t('gather.go')}
+            </button>
+          </li>
         </ul>
       </Card>
       <Pack c={c} />
@@ -122,6 +136,7 @@ const toolFor = (loc: GatherLoc) => (Object.values(ITEMS).find((d) => d.toolFor 
 
 export function GatherPanel({ s, c }: { s: GameState; c: Character }) {
   const busy = transient.busy;
+  if (c.location === 'wilds') return <WildsPanel s={s} c={c} />;
   if (!isGatherLoc(c.location)) return <Destinations c={c} />;
 
   const loc = c.location;

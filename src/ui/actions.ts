@@ -3,7 +3,7 @@ import type { Recipe } from '../data/recipes';
 import type { DungeonId } from '../data/dungeons';
 import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
-import { feed, healPet, release, resurrect } from '../engine/pets';
+import { canControl, feed, healPet, release, resurrect, TAME_MS, track, tryTame, vetTime, wildAreaOpen } from '../engine/pets';
 import { bump } from '../engine/achievements';
 import { commission } from '../engine/patterns';
 import { chooseEvent, goBack, openBossChest } from '../engine/dungeon';
@@ -94,6 +94,7 @@ export function searchNode(): void {
 export function travel(to: Location): void {
   const c = activeChar(getState());
   if (!c || transient.busy || c.location === to || c.location === 'dungeon') return;
+  if (c.location === 'wilds') c.quarry = null;
   timed('travel', 2500, () =>
     withChar((s, c) => {
       c.location = to;
@@ -494,4 +495,79 @@ export function commissionPattern(key: string): void {
     const it = commission(s, c, key, rng);
     if (it) log(s, 'log.commission', { item: itemParam(it) }, 'gain');
   });
+}
+
+/* ---------------- the Wilds ---------------- */
+
+export function setWildsArea(id: 1 | 2 | 3 | 4): void {
+  withChar((_, c) => {
+    if (!wildAreaOpen(c, id)) return;
+    c.wildsArea = id;
+    c.quarry = null;
+  });
+}
+
+export function trackAnimals(): void {
+  const c = activeChar(getState());
+  if (!c || transient.busy || c.location !== 'wilds') return;
+  timed('search', 2000 + rng() * 2000, () =>
+    withChar((s, c) => {
+      c.quarry = track(c, rng);
+      if (c.quarry) log(s, 'log.wilds.found', { pet: `@mon.${c.quarry}` }, 'sys');
+      else log(s, 'log.wilds.none', undefined, 'bad');
+    }),
+  );
+}
+
+/** Ten seconds of calming words, a phrase every two seconds, then the taming roll. */
+function withPhrases(done: () => void): void {
+  transient.phrase = Math.floor(rng() * 5);
+  const tick = window.setInterval(() => {
+    transient.phrase += 1;
+    touch();
+  }, 2000);
+  timed('tame', TAME_MS, () => {
+    window.clearInterval(tick);
+    done();
+  });
+}
+
+export function tameQuarry(): void {
+  const c = activeChar(getState());
+  if (!c?.quarry || transient.busy || !canControl(c, c.quarry)) return;
+  withPhrases(() =>
+    withChar((s, c) => {
+      const k = c.quarry;
+      if (!k) return;
+      const r = tryTame(c, k, rng);
+      if (r.ok) {
+        c.quarry = null;
+        bump(s, 'tamed');
+        log(s, 'log.wilds.tamed', { pet: `@mon.${k}` }, 'gain');
+      } else if (r.attacked) {
+        c.quarry = null;
+        log(s, 'log.wilds.attacked', { pet: `@mon.${k}`, dmg: r.attacked }, 'bad');
+      } else if (r.fled) {
+        c.quarry = null;
+        log(s, 'log.wilds.fled', { pet: `@mon.${k}` }, 'bad');
+      } else log(s, 'log.wilds.notYet', { pet: `@mon.${k}` }, 'bad');
+    }),
+  );
+}
+
+export function letQuarryGo(): void {
+  withChar((_, c) => (c.quarry = null));
+}
+
+/** The sleeping beast in a lair is tamed the same slow way. */
+export function tameLairBeast(): void {
+  const c = activeChar(getState());
+  if (!c?.run || transient.busy) return;
+  withPhrases(() => withChar((s, c) => void chooseEvent(s, c, 'tame', rng)));
+}
+
+export function vetPet(id: number): void {
+  const c = activeChar(getState());
+  if (!c || transient.busy) return;
+  timed('vet', vetTime(c), () => healMyPet(id));
 }

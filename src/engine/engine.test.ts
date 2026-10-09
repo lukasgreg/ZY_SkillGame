@@ -554,7 +554,7 @@ describe('dungeons', () => {
   });
 });
 
-import { feed, loyaltyNow, resurrect, tameChance, tickPets, usedSlots } from './pets';
+import { canControl, feed, gainPetXp, loyaltyNow, makePet, maxSlots, petMaxHp, resurrect, tameChance, tickPets, track, tryTame, usedSlots } from './pets';
 import { startCombat } from './combat';
 
 function ranger(seed = 4) {
@@ -572,36 +572,68 @@ describe('taming and pets', () => {
     expect(c.pack.res.arrow).toBe(150);
   });
 
-  it('taming needs skill and control slots; a tamed animal fights for you', () => {
-    const { s, c } = ranger();
+  it('taming happens in the wild: track an animal, then a slow taming; INT sets the slots', () => {
+    const { c } = ranger();
     const rng = mulberry32(8);
+    c.stats.int = 30;
+    expect(maxSlots(c)).toBe(3);
+    expect(canControl(c, 'chicken')).toBe(true);
+    expect(canControl(c, 'bear')).toBe(false);
+    c.stats.int = 100;
+    expect(maxSlots(c)).toBe(10);
+    c.skills.tracking = 300;
+    c.wildsArea = 1;
+    let found = null;
+    for (let i = 0; i < 20 && !found; i++) found = track(c, rng);
+    expect(found).not.toBe(null);
     c.skills.taming = 900;
-    expect(tameChance(c, 'drake')).toBeGreaterThan(0);
+    let r = tryTame(c, 'dog', rng);
+    for (let i = 0; i < 20 && !r.ok; i++) r = tryTame(c, 'dog', rng);
+    expect(r.ok).toBe(true);
+    expect(usedSlots(c)).toBe(2);
     expect(tameChance(c, 'skeleton')).toBe(0);
-    enter(s, c, 'wilds', rng);
-    c.run!.combat = startCombat(['wolf', 'wolf']);
-    let tries = 0;
-    while (c.pets.length === 0 && tries++ < 30) {
-      c.hp = 999;
-      fight(s, c, { type: 'tame' }, rng);
+  });
+
+  it('a failed taming of a fierce animal can hurt you', () => {
+    const { c } = ranger();
+    c.skills.taming = 0;
+    c.hp = 100;
+    let hurt = false;
+    for (let i = 0; i < 40 && !hurt; i++) {
+      const r = tryTame(c, 'bear', mulberry32(i));
+      if (!r.ok && r.attacked > 0) hurt = true;
     }
-    expect(c.pets.length).toBe(1);
-    expect(usedSlots(c)).toBe(1);
-    // the pet helps finish the fight
-    while (c.run?.combat) {
+    expect(hurt).toBe(true);
+    expect(c.hp).toBeGreaterThan(0);
+  });
+
+  it('pets level up from shared kill experience and grow stronger', () => {
+    const { s, c } = ranger(14);
+    const rng = mulberry32(14);
+    c.stats.int = 100;
+    c.pets.push(makePet('wolf', 1));
+    const before = petMaxHp(c.pets[0]);
+    enter(s, c, 'wilds', rng);
+    c.run!.combat = startCombat(['bear']);
+    c.skills.archery = 1000;
+    c.pack.res.arrow = 100;
+    for (let i = 0; i < 60 && c.run?.combat; i++) {
       c.hp = 999;
+      c.pets[0].hp = 999;
       fight(s, c, { type: 'attack' }, rng);
     }
-    expect(c.run!.log.some((e) => e.k === 'fight.allyHit' || e.k === 'fight.allyMiss')).toBe(true);
+    expect(c.pets[0].xp + c.pets[0].level * 1000).toBeGreaterThan(1000);
+    expect(gainPetXp(c.pets[0], 100_000)).toBeGreaterThan(0);
+    expect(petMaxHp(c.pets[0])).toBeGreaterThan(before);
   });
 
   it('loyalty drops over time; hungry pets run off, fed and loyal pets bond', () => {
     const { c } = ranger();
     const now = Date.now();
-    c.pets.push({ id: 1, kind: 'wolf', hp: 36, skill: 300, loyalty: 60, fedAt: now - 13 * 3600_000, tamedAt: now - 30 * 3600_000, bonded: false, dead: false });
+    c.pets.push({ id: 1, kind: 'wolf', hp: 36, skill: 300, loyalty: 60, fedAt: now - 13 * 3600_000, tamedAt: now - 30 * 3600_000, bonded: false, dead: false, level: 1, xp: 0 });
     expect(loyaltyNow(c.pets[0], now)).toBe(0);
     expect(tickPets(c, now).ran.length).toBe(1);
-    c.pets.push({ id: 2, kind: 'wolf', hp: 36, skill: 300, loyalty: 40, fedAt: now, tamedAt: now - 30 * 3600_000, bonded: false, dead: false });
+    c.pets.push({ id: 2, kind: 'wolf', hp: 36, skill: 300, loyalty: 40, fedAt: now, tamedAt: now - 30 * 3600_000, bonded: false, dead: false, level: 1, xp: 0 });
     c.pack.res.perch = 1;
     expect(feed(c, c.pets[0], 'perch', now)).toBe(true);
     expect(tickPets(c, now).bonded.length).toBe(1);
@@ -610,8 +642,8 @@ describe('taming and pets', () => {
   it('a bonded pet that dies can be brought back with Animal Healing', () => {
     const { c } = ranger();
     c.skills.animalHealing = 1000;
-    c.pack.res.bandage = 5;
-    c.pets.push({ id: 3, kind: 'bear', hp: 0, skill: 400, loyalty: 80, fedAt: Date.now(), tamedAt: 0, bonded: true, dead: true });
+    c.pack.res.bandage = 10;
+    c.pets.push({ id: 3, kind: 'bear', hp: 0, skill: 400, loyalty: 80, fedAt: Date.now(), tamedAt: 0, bonded: true, dead: true, level: 1, xp: 0 });
     expect(resurrect(c, c.pets[0], () => 0.01)).toBe(true);
     expect(c.pets[0].dead).toBe(false);
   });
@@ -976,5 +1008,19 @@ describe('patterns', () => {
     const it = commission(s, c, 'mace:silver', rng)!;
     expect(it.mat).toBe('silver');
     expect(c.gold).toBe(0);
+  });
+});
+
+import { en } from '../i18n/en';
+import { cs } from '../i18n/cs';
+import { RESOURCE_IDS } from '../data/resources';
+import { ITEM_IDS } from '../data/items';
+import { MONSTER_IDS } from '../data/dungeons';
+
+describe('translations', () => {
+  it('every resource, item and monster has an English and Czech name', () => {
+    const keys = [...RESOURCE_IDS.map((r) => `res.${r}`), ...ITEM_IDS.map((i) => `item.${i}`), ...MONSTER_IDS.map((m) => `mon.${m}`)];
+    const missing = keys.filter((k) => !(k in en) || !(k in cs));
+    expect(missing).toEqual([]);
   });
 });

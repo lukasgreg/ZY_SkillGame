@@ -1,14 +1,14 @@
-import { DUNGEONS, DUNGEON_IDS, MONSTERS, TAMEABLE } from '../data/dungeons';
-import { canControl, petMaxHp, tameChance, vetHeal } from '../engine/pets';
+import { DUNGEONS, DUNGEON_IDS, MONSTERS } from '../data/dungeons';
+import { petMaxHp, vetHeal } from '../engine/pets';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import { ABILITY_COST, abilityFor, abilityOk, allies, armorValue, bandageHeal, fleeChance, hitChance, usesArrows, weaponInfo, type Ability } from '../engine/combat';
-import { EVENT_CHOICES, canLeave, corpseFresh, eventCost, exits, here, omenOf, scoutCost } from '../engine/dungeon';
+import { EVENT_CHOICES, canLeave, corpseFresh, eventCost, exits, here, lairBeast, omenOf, scoutCost } from '../engine/dungeon';
 import { useEffect, useRef } from 'preact/hooks';
 import { maxHp, maxStamina } from '../engine/skills';
 import type { Character, DNode, GameState, Run, Stance } from '../engine/state';
 import { nameOf, num, t } from '../i18n';
 import {
-  campHere, changeStance, enterDungeon, eventChoice, openChest, stepBack, fieldRepair, fightAction, leaveDungeon, lootMyCorpse, moveTo, reengageFoes, scoutDungeon, useWayHome,
+  campHere, changeStance, enterDungeon, eventChoice, openChest, stepBack, tameLairBeast, fieldRepair, fightAction, leaveDungeon, lootMyCorpse, moveTo, reengageFoes, scoutDungeon, useWayHome,
 } from './actions';
 import { Card, JournalLines, Meter } from './common';
 import { transient } from './store';
@@ -164,7 +164,6 @@ function Fight({ c, run }: { c: Character; run: Run }) {
   const target = cb.foes.find((f) => f.hp > 0);
   const p = target ? hitChance(c.skills[w.skill] / 10, MONSTERS[target.kind].skill, c.skills.tactics / 10) : 0;
   const foods = (Object.keys(c.pack.res) as ResourceId[]).filter((id) => RESOURCES[id].food);
-  const tameable = c.skills.taming > 0 ? cb.foes.find((f) => f.hp > 0 && TAMEABLE[f.kind]) : undefined;
   return (
     <Card title={t('fight.title', { n: cb.round })}>
       <ul class="foes">
@@ -190,11 +189,11 @@ function Fight({ c, run }: { c: Character; run: Run }) {
             return (
               <li key={i}>
                 <span>
-                  {t(`mon.${kind}`)} <span class="muted small">{'pet' in a ? t('pet.yours') : t('pet.summoned')}</span>
+                  {t(`mon.${kind}`)} <span class="muted small">{'pet' in a ? `${t('pet.yours')} · ${t('hud.level', { n: a.pet.level ?? 1 })}` : t('pet.summoned')}</span>
                 </span>
-                <Meter value={hp} max={MONSTERS[kind].hp} kind="stamina" />
+                <Meter value={hp} max={'pet' in a ? petMaxHp(a.pet) : MONSTERS[kind].hp} kind="stamina" />
                 <span class="small">
-                  {Math.floor(hp)}/{MONSTERS[kind].hp}
+                  {Math.floor(hp)}/{'pet' in a ? petMaxHp(a.pet) : MONSTERS[kind].hp}
                 </span>
               </li>
             );
@@ -225,11 +224,6 @@ function Fight({ c, run }: { c: Character; run: Run }) {
             {t('pack.eat')}: {t(`res.${id}`)} ({c.pack.res[id]})
           </button>
         ))}
-        {tameable && (
-          <button class="btn" disabled={busy || !canControl(c, tameable.kind)} onClick={() => fightAction({ type: 'tame' })}>
-            {t('fight.tame', { foe: t(`mon.${tameable.kind}`), p: Math.round(tameChance(c, tameable.kind) * 100) })}
-          </button>
-        )}
         {c.pets.some((p) => !p.dead && p.hp < petMaxHp(p)) && (
           <button class="btn" disabled={busy || !(c.pack.res.bandage ?? 0)} onClick={() => fightAction({ type: 'healPet' })}>
             {t('fight.healPet', { n: vetHeal(c) })}
@@ -267,13 +261,14 @@ function Room({ c, run }: { c: Character; run: Run }) {
       {run.sealed && !run.bossDown && <p class="warn small">{t('dun.sealedNote')}</p>}
       {node.type === 'event' && node.event && !node.cleared && (
         <div class="event">
-          <p>{t(`event.${node.event}.text`)}</p>
+          <p>{t(`event.${node.event}.text`, { beast: t(`mon.${lairBeast(run)}`) })}</p>
+          {transient.busy?.kind === 'tame' && <p class="phrase">“{t(`wilds.phrase.${transient.phrase % 5}`)}”</p>}
           <div class="row">
             {EVENT_CHOICES[node.event].map((ch) => {
               const cost = eventCost(run, node.event!, ch);
               return (
-                <button key={ch} class={`btn ${ch === 'leave' ? '' : 'btn-primary'}`} disabled={busy || cost > c.gold} onClick={() => eventChoice(ch)}>
-                  {t(`event.${node.event}.${ch}`, { p: cost })}
+                <button key={ch} class={`btn ${ch === 'leave' ? '' : 'btn-primary'}`} disabled={busy || cost > c.gold} onClick={() => (ch === 'tame' ? tameLairBeast() : eventChoice(ch))}>
+                  {t(`event.${node.event}.${ch}`, { p: cost, beast: t(`mon.${lairBeast(run)}`) })}
                 </button>
               );
             })}
