@@ -7,7 +7,7 @@ and puts every new string in both `src/i18n/en.ts` and `src/i18n/cs.ts`.
 
 | Phase | Topic | Status |
 |---|---|---|
-| A | Levels and experience (Endor-style) | not started |
+| A | Levels and experience (Endor-style) | done |
 | B | Metals with special effects, monster families | not started |
 | C | UO armour pieces, paperdoll, weight drains stamina | not started |
 | D | Random dungeons: visible rooms, events, omens, affixes, final chest, loot items | not started |

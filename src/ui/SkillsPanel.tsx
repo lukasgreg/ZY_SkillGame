@@ -1,4 +1,5 @@
 import { skillCap } from '../data/professions';
+import { CAP_LEVEL, effectiveCap } from '../engine/levels';
 import { SKILLS, SKILL_IDS, type SkillCategory, type SkillId } from '../data/skills';
 import { totalSkills } from '../engine/skills';
 import { log, type Character, type Lock } from '../engine/state';
@@ -31,10 +32,11 @@ export function SkillsPanel({ c }: { c: Character }) {
           <Card key={cat} title={t(`skillcat.${cat}`)}>
             <ul class="skills">
               {SKILL_IDS.filter((id) => SKILLS[id].category === cat).map((id) => {
-                const cap = skillCap(c.profession, id);
+                const cap = effectiveCap(c, id);
+                const full = skillCap(c.profession, id);
                 const lock = c.locks[id];
                 return (
-                  <li key={id} class={cap === 0 ? 'off' : ''}>
+                  <li key={id} class={full === 0 ? 'off' : ''} title={cap < full ? t('skills.capLater', { cap: full / 10, l: CAP_LEVEL }) : undefined}>
                     <button class={`lock lock-${lock}`} onClick={() => cycle(id)} title={t(`skills.lock.${lock}`)} aria-label={t(`skills.lock.${lock}`)}>
                       {GLYPH[lock]}
                     </button>

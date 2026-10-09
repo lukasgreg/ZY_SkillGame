@@ -395,3 +395,5 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .cloud-banner { background: var(--paper); color: var(--ink); border: 2px solid var(--gold); padding: 12px 16px; }
 .cloud-banner p { margin: 0 0 4px; }
 .card a { color: var(--umber); }
+.meter-xp > span { background: var(--gold); }
+.hud-id .lvl { font-size: 14px; color: var(--muted-ground); letter-spacing: 0.08em; margin-left: 6px; }

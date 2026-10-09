@@ -52,7 +52,7 @@ export function AchievementsPanel({ s }: { s: GameState }) {
   );
 }
 
-/** Banner for freshly earned achievements. */
+/** Banner for achievements earned and levels reached. */
 export function AchievementToast() {
   const tt = transient.toast;
   if (!tt) return null;
@@ -60,9 +60,11 @@ export function AchievementToast() {
     <div class="toast" role="status" key={tt.id}>
       <span class="ach-mark">★</span>
       <div>
-        <div class="toast-head">{t('ach.unlocked')}</div>
-        {tt.ids.map((id) => (
-          <strong key={id}>{t(`ach.${id}`)}</strong>
+        {tt.items.map((it, i) => (
+          <div key={i}>
+            <div class="toast-head">{t(it.head)}</div>
+            <strong>{t(it.k, it.p)}</strong>
+          </div>
         ))}
       </div>
     </div>

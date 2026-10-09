@@ -4,7 +4,8 @@ import { RESOURCES, SMELTING, type ResourceId } from '../data/resources';
 import type { StatId } from '../data/skills';
 import { addRes } from './character';
 import { clamp, randInt, type Rng } from './rng';
-import { isPowerHour, trySkillGain, tryStatGain } from './skills';
+import { isPowerHour, trySkillGain } from './skills';
+import { craftXp, gainXp } from './levels';
 import { nextUid, type Character, type GameState, type ItemInstance } from './state';
 
 /* ---------------- shared ---------------- */
@@ -57,7 +58,7 @@ export function smelt(c: Character, ore: ResourceId, rng: Rng, now = new Date())
     addRes(c.pack, ore, -1);
   }
   const gain = trySkillGain(c, 'mining', p, ok, rng, { rarity: RESOURCES[ore].rarity, tooEasyAt: sm.max, mult: (isPowerHour(now) ? 1.5 : 1) * 0.6 });
-  return { ok, gain, stat: tryStatGain(c, 'mining', rng), toolBroke: null, bar: sm.bar };
+  return { ok, gain, stat: null, toolBroke: null, bar: sm.bar };
 }
 
 /* ---------------- crafting ---------------- */
@@ -146,7 +147,8 @@ export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | nu
 
   const rarity = (metal ? METALS[metal].rarity : 0) + (item?.quality === 'exceptional' ? 0.5 : 0) + (r.rarity ?? 0);
   const gain = trySkillGain(c, r.skill, p, ok, rng, { rarity, tooEasyAt: max, mult: isPowerHour(now) ? 1.5 : 1 });
-  const stat = tryStatGain(c, r.skill, rng);
+  const stat = null;
+  if (ok) gainXp(c, craftXp(r.min));
   const tool = findTool(c, r.tool)!;
   const toolBroke = wear(c, tool) ? tool.def : null;
   return { ok, gain, stat, toolBroke, item, res, lost };

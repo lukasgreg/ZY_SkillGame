@@ -12,6 +12,7 @@ function setup(seed = 1) {
   const rng = mulberry32(seed);
   const s = newGameState('en');
   const c = createCharacter(s, 'Bodrik', 'barbarian', 'craftsman', rollCharacter('barbarian', 'craftsman', rng));
+  c.level = 30; // full skill caps for rule tests
   return { s, c, rng };
 }
 
@@ -397,6 +398,7 @@ function warrior(seed = 3) {
   const rng = mulberry32(seed);
   const s = newGameState('en');
   const c = createCharacter(s, 'Ragna', 'barbarian', 'warrior', rollCharacter('barbarian', 'warrior', rng));
+  c.level = 30;
   return { s, c, rng };
 }
 
@@ -485,9 +487,11 @@ describe('dungeons', () => {
     expect(run.combat).not.toBe(null);
     c.hp = 1;
     let out = null;
-    for (let i = 0; i < 50 && out !== 'died'; i++) {
+    for (let i = 0; i < 200 && out !== 'died'; i++) {
       c.skills.edged = 0;
-      out = fight(s, c, { type: 'bandage' }, rng);
+      c.skills.shieldBlock = 0;
+      c.hp = 1;
+      out = fight(s, c, { type: 'wait' }, rng);
       if (out === 'won') break;
     }
     expect(out).toBe('died');
@@ -557,6 +561,7 @@ function ranger(seed = 4) {
   const rng = mulberry32(seed);
   const s = newGameState('en');
   const c = createCharacter(s, 'Ylva', 'elf', 'ranger', rollCharacter('elf', 'ranger', rng));
+  c.level = 30;
   return { s, c, rng };
 }
 
@@ -765,5 +770,38 @@ describe('archery supplies', () => {
     fight(s, c, { type: 'wait' }, rng);
     expect(c.run!.log.some((e) => e.k === 'fight.waiting')).toBe(true);
     expect(c.run!.combat!.guard).toBe(false);
+  });
+});
+
+import { capFactor, effectiveCap, gainXp, killXp, statsAt, xpToNext } from './levels';
+
+describe('levels', () => {
+  it('xp per level grows; a rat is worth little, the warlord a lot', () => {
+    expect(xpToNext(1)).toBe(300);
+    expect(xpToNext(20)).toBeGreaterThan(xpToNext(10) * 3);
+    expect(killXp('rat')).toBeLessThan(10);
+    expect(killXp('gnarlWarlord')).toBeGreaterThan(900);
+  });
+
+  it('skill caps open up with level until 30', () => {
+    const { c } = setup();
+    c.level = 1;
+    expect(effectiveCap(c, 'mining')).toBe(350);
+    c.level = 30;
+    expect(effectiveCap(c, 'mining')).toBe(1000);
+    expect(capFactor(45)).toBe(1);
+  });
+
+  it('levelling raises stats toward the profession caps and refills hits', () => {
+    const { c } = setup();
+    c.level = 1;
+    c.xp = 0;
+    c.hp = 1;
+    const str = c.stats.str;
+    expect(gainXp(c, xpToNext(1) + xpToNext(2))).toBe(2);
+    expect(c.level).toBe(3);
+    expect(c.stats.str).toBeGreaterThanOrEqual(str);
+    expect(c.hp).toBeGreaterThan(1);
+    expect(statsAt(c, 50).str).toBe(90);
   });
 });

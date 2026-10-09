@@ -2,6 +2,17 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'hud.level': '{n}. úroveň',
+  'hud.xp': 'Zkušenosti',
+  'hud.xpTip': '{xp} / {next} zkušeností do další úrovně',
+  'hud.maxLevel': 'max',
+  'toast.levelUp': 'Nová úroveň',
+  'toast.levelText': '{name}: {n}. úroveň',
+  'log.levelUp': '{name}: {n}. úroveň! Vlastnosti rostou a limity dovedností se otevírají.',
+  'fight.xp': '+{n} zkušeností.',
+  'char.levelLine': 'Úroveň {n} z {max} · {xp} / {next} zkušeností',
+  'char.levelNote': 'Úrovně zvyšují vlastnosti a až do {cap}. úrovně i to, kam mohou dovednosti růst. Bojovníci postupují porážením příšer, řemeslníci hlavně plněním zakázek; sběr a výroba dají jen málo.',
+  'skills.capLater': 'Do {l}. úrovně se otevře až na {cap}',
   'fight.wait': 'Vyčkat a krýt se',
   'fight.waitTip': 'Vynecháš útok; nepřátelé tě toto kolo zasáhnou o 25 % méně často.',
   'fight.waiting': 'Vyčkáváš a kryješ se.',

@@ -30,6 +30,7 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
     chars: s.chars.map((c: any) => ({ ...c, pets: [], run: c.run?.combat ? { ...c.run, combat: { ...c.run.combat, summon: null, summoned: false } } : c.run })),
   }),
   7: (s) => ({ ...s, version: 8, stats: newStats(), achievements: {} }),
+  8: (s) => ({ ...s, version: 9, chars: s.chars.map((c: any) => ({ ...c, level: 1, xp: 0, statBase: { ...c.stats } })) }),
 };
 
 export function deserialize(json: string): GameState {

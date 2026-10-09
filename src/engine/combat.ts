@@ -6,7 +6,7 @@ import type { SkillId } from '../data/skills';
 import { addRes, eat } from './character';
 import { wear } from './craft';
 import { chance, clamp, randInt, type Rng } from './rng';
-import { isPowerHour, maxHp, maxStamina, trySkillGain, tryStatGain } from './skills';
+import { isPowerHour, maxHp, maxStamina, trySkillGain } from './skills';
 import type { Character, Combat, Foe, ItemInstance, LogEntry, Pet, Run, Stance } from './state';
 
 /* ---------------- equipment ---------------- */
@@ -165,7 +165,6 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const g2 = trySkillGain(c, 'tactics', p, hit, rng, gainOpts(mon.skill, now));
   if (g1) say(run, 'log.gain', { skill: `@skill.${w.skill}`, amount: `#${g1 / 10}`, value: `#${c.skills[w.skill] / 10}` }, 'gain');
   if (g2) say(run, 'log.gain', { skill: '@skill.tactics', amount: `#${g2 / 10}`, value: `#${c.skills.tactics / 10}` }, 'gain');
-  tryStatGain(c, w.skill, rng);
   if (!hit) {
     say(run, 'fight.miss', { foe: foeName(target) });
     return;

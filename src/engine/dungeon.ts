@@ -3,6 +3,7 @@ import { addRes } from './character';
 import { loot, playRound, startCombat, type Action, type Outcome } from './combat';
 import { mulberry32, pickWeighted, randInt, type Rng } from './rng';
 import { maxHp, maxStamina, trySkillGain } from './skills';
+import { gainXp, killXp } from './levels';
 import type { Character, DNode, Foe, GameState, LogEntry, RoomType, Run } from './state';
 
 /* ---------------- map generation (seeded) ---------------- */
@@ -266,6 +267,11 @@ export function fight(s: GameState, c: Character, action: Action, rng: Rng): Out
   if (out === 'won') {
     const node = here(run);
     loot(c, run, run.combat.foes, rng);
+    const xp = run.combat.foes.filter((f) => f.hp <= 0).reduce((n, f) => n + killXp(f.kind), 0);
+    if (xp) {
+      gainXp(c, xp);
+      say(run, 'fight.xp', { n: xp }, 'gain');
+    }
     run.combat = null;
     node.cleared = true;
     if (node.type === 'boss') {

@@ -5,6 +5,17 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'hud.level': 'Level {n}',
+  'hud.xp': 'Experience',
+  'hud.xpTip': '{xp} / {next} XP to the next level',
+  'hud.maxLevel': 'max',
+  'toast.levelUp': 'Level up',
+  'toast.levelText': '{name} reached level {n}',
+  'log.levelUp': '{name} reached level {n}! Stats rise and skill limits open further.',
+  'fight.xp': '+{n} experience.',
+  'char.levelLine': 'Level {n} of {max} · {xp} / {next} XP',
+  'char.levelNote': 'Levels raise your stats and, up to level {cap}, how far your skills can grow. Fighters level by defeating monsters, craftsmen mostly by fulfilling contracts; gathering and crafting give a little.',
+  'skills.capLater': 'Opens up to {cap} by level {l}',
   'fight.wait': 'Wait and guard',
   'fight.waitTip': 'Skip your attack; enemies hit you 25% less often this round.',
   'fight.waiting': 'You hold back and guard yourself.',

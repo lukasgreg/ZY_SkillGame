@@ -5,7 +5,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon';
@@ -41,6 +41,11 @@ export interface Character {
   race: RaceId;
   profession: ProfessionId;
   stats: Record<StatId, number>;
+  /** Rolled starting stats; levels raise stats from here toward the profession caps. */
+  statBase: Record<StatId, number>;
+  level: number;
+  /** Experience toward the next level. */
+  xp: number;
   /** Integer tenths (184 = 18.4). */
   skills: Record<SkillId, number>;
   locks: Record<SkillId, Lock>;

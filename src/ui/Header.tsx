@@ -1,4 +1,5 @@
 import { packWeight } from '../engine/character';
+import { MAX_LEVEL, xpToNext } from '../engine/levels';
 import { isPowerHour, maxHp, maxStamina, maxWeight } from '../engine/skills';
 import type { Character } from '../engine/state';
 import { num, t } from '../i18n';
@@ -10,12 +11,19 @@ export function Header({ c }: { c: Character }) {
   return (
     <header class="hud">
       <div class="hud-id">
-        <h1>{c.name}</h1>
+        <h1>
+          {c.name} <span class="lvl">{t('hud.level', { n: c.level })}</span>
+        </h1>
         <p>
           {t(`race.${c.race}`)} · {t(`prof.${c.profession}`)} · {t(`loc.${c.location}`)}
         </p>
       </div>
       <div class="hud-bars">
+        <div class="hud-bar" title={t('hud.xpTip', { xp: Math.floor(c.xp), next: xpToNext(c.level) })}>
+          <span>{t('hud.xp')}</span>
+          <Meter value={c.xp} max={c.level >= MAX_LEVEL ? 1 : xpToNext(c.level)} kind="xp" label={t('hud.xp')} />
+          <b>{c.level >= MAX_LEVEL ? t('hud.maxLevel') : `${Math.floor((c.xp / xpToNext(c.level)) * 100)}%`}</b>
+        </div>
         <div class="hud-bar">
           <span>{t('hud.hp')}</span>
           <Meter value={c.hp} max={maxHp(c)} kind="hp" label={t('hud.hp')} />

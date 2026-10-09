@@ -5,7 +5,8 @@ import type { SkillId, StatId } from '../data/skills';
 import { addRes, packWeight } from './character';
 import { wear } from './craft';
 import { clamp, pickWeighted, randInt, type Rng } from './rng';
-import { isPowerHour, maxWeight, trySkillGain, tryStatGain } from './skills';
+import { isPowerHour, maxWeight, trySkillGain } from './skills';
+import { GATHER_XP, gainXp } from './levels';
 import type { Character, ItemInstance, Node } from './state';
 
 export const STAMINA_PER_PULL = 2;
@@ -121,7 +122,8 @@ export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult
     tooEasyAt: Math.min(y.best, 100) + 15,
     mult: isPowerHour(now) ? 1.5 : 1,
   });
-  const stat = tryStatGain(c, skillId, rng);
+  const stat = null;
+  if (ok) gainXp(c, GATHER_XP);
 
   // Tool wear (design 4b): every pull, success or fizzle, costs 1 durability.
   const tool = gatherTool(c, skillId)!;

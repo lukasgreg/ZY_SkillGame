@@ -1,6 +1,7 @@
 import { PROFESSIONS, RACES } from '../data/professions';
 import type { StatId } from '../data/skills';
 import { maxWeight, totalStats } from '../engine/skills';
+import { CAP_LEVEL, MAX_LEVEL, xpToNext } from '../engine/levels';
 import type { Character } from '../engine/state';
 import { nameOf, num, t } from '../i18n';
 import { slotOf, type Slot } from '../data/items';
@@ -65,6 +66,10 @@ export function CharacterPanel({ c }: { c: Character }) {
   return (
     <div class="grid-2">
       <Card title={t('char.stats')} note={t('char.statTotal', { t: totalStats(c) })}>
+        <p class="small">
+          {t('char.levelLine', { n: c.level, max: MAX_LEVEL, xp: num(Math.floor(c.xp)), next: c.level >= MAX_LEVEL ? '—' : num(xpToNext(c.level)) })}
+        </p>
+        <p class="small muted">{t('char.levelNote', { cap: CAP_LEVEL })}</p>
         <ul class="skills">
           {STATS.map((s) => (
             <li key={s}>

@@ -1,4 +1,4 @@
-import { skillCap } from '../data/professions';
+import { effectiveCap } from './levels';
 import { TOTAL_SKILL_CAP, type SkillId } from '../data/skills';
 import { totalSkills } from './skills';
 import { ITEMS, type ItemDefId } from '../data/items';
@@ -112,7 +112,7 @@ export function trainSkillCost(c: Character, id: SkillId): number {
 
 export function canTrainSkill(c: Character, id: SkillId): boolean {
   const next = Math.min(c.skills[id] + 10, TRAIN_LIMIT);
-  return c.location === 'town' && next > c.skills[id] && next <= skillCap(c.profession, id) && c.gold >= trainSkillCost(c, id) && c.locks[id] !== 'locked';
+  return c.location === 'town' && next > c.skills[id] && next <= effectiveCap(c, id) && c.gold >= trainSkillCost(c, id) && c.locks[id] !== 'locked';
 }
 
 export function trainSkill(c: Character, id: SkillId): boolean {

@@ -4,6 +4,7 @@ import { RECIPES, type Recipe } from '../data/recipes';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
 import { addRes } from './character';
+import { contractXp, gainXp } from './levels';
 import { canCraft, craft, type CraftResult } from './craft';
 import { chance, pickWeighted, randInt, type Rng } from './rng';
 import type { Character, Contract, GameState, ItemInstance } from './state';
@@ -113,6 +114,7 @@ export function handIn(s: GameState, c: Character, k: Contract): { given: number
   const done = k.delivered >= k.n;
   if (done) {
     c.gold += k.reward.gold;
+    gainXp(c, contractXp(k.reward.gold));
     if (k.reward.plan) c.plans[k.reward.plan] = (c.plans[k.reward.plan] ?? 0) + 1;
     if (k.reward.res) addRes(c.pack, k.reward.res.id, k.reward.res.n);
     s.reputation += 3;

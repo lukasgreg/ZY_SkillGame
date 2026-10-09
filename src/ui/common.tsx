@@ -13,7 +13,7 @@ export function Card(props: { title?: ComponentChildren; note?: ComponentChildre
   );
 }
 
-export function Meter(props: { value: number; max: number; kind: 'hp' | 'stamina' | 'weight' | 'skill' | 'dur'; label?: string }) {
+export function Meter(props: { value: number; max: number; kind: 'hp' | 'stamina' | 'weight' | 'skill' | 'dur' | 'xp'; label?: string }) {
   const pct = props.max > 0 ? Math.max(0, Math.min(100, (props.value / props.max) * 100)) : 0;
   return (
     <div class={`meter meter-${props.kind}`} role="meter" aria-valuenow={props.value} aria-valuemax={props.max} aria-label={props.label}>

@@ -1,7 +1,7 @@
 import { ITEMS } from '../data/items';
-import { PROFESSIONS, skillCap } from '../data/professions';
-import { SKILLS, SKILL_IDS, TOTAL_SKILL_CAP, TOTAL_STAT_CAP, type SkillId, type StatId } from '../data/skills';
-import { chance, clamp, pickWeighted, type Rng } from './rng';
+import { SKILL_IDS, TOTAL_SKILL_CAP, type SkillId } from '../data/skills';
+import { effectiveCap } from './levels';
+import { chance, clamp, type Rng } from './rng';
 import type { Character } from './state';
 
 /** Linear success chance between min and max skill (whole points), as in UO. */
@@ -53,7 +53,7 @@ export function totalSkills(c: Character): number {
 export function trySkillGain(c: Character, id: SkillId, p: number, success: boolean, rng: Rng, opts: GainOpts = {}): number {
   if (c.locks[id] !== 'up') return 0;
   const cur = c.skills[id];
-  const cap = skillCap(c.profession, id);
+  const cap = effectiveCap(c, id);
   if (cur >= cap) return 0;
   if (!chance(rng, gainChance(cur / 10, p, success, opts))) return 0;
   let amount = Math.min(gainAmount(cur / 10, rng), cap - cur);
@@ -69,20 +69,6 @@ export function trySkillGain(c: Character, id: SkillId, p: number, success: bool
 
 export function totalStats(c: Character): number {
   return c.stats.str + c.stats.dex + c.stats.int;
-}
-
-/** Small chance per skill use to raise a stat tied to that skill. Returns the stat raised, or null. */
-export function tryStatGain(c: Character, id: SkillId, rng: Rng): StatId | null {
-  const caps = PROFESSIONS[c.profession].statCaps;
-  const total = totalStats(c);
-  if (total >= TOTAL_STAT_CAP) return null;
-  const base = 0.05 * (1 - total / TOTAL_STAT_CAP) + 0.01;
-  if (!chance(rng, base)) return null;
-  const options = (Object.entries(SKILLS[id].stats) as [StatId, number][]).filter(([s]) => c.stats[s] < caps[s]);
-  const stat = pickWeighted(rng, options);
-  if (!stat) return null;
-  c.stats[stat] += 1;
-  return stat;
 }
 
 /** Powerhour (Andaria): Friday–Sunday, 18:00–22:00 local time. */

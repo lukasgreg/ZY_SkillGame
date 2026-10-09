@@ -11,7 +11,13 @@ import { decay } from '../engine/dungeon';
 import { checkAchievements } from '../engine/achievements';
 import { restPets, tickPets } from '../engine/pets';
 import type { ResourceId } from '../data/resources';
-import { detectLang, setLang } from '../i18n';
+import { detectLang, setLang, type Params } from '../i18n';
+
+export interface ToastItem {
+  head: string;
+  k: string;
+  p?: Params;
+}
 
 /** UI-only state that is never saved (an action in progress, flashes). */
 export interface Transient {
@@ -21,7 +27,7 @@ export interface Transient {
   /** Last skill gain, for the floating "+0.1" flash. */
   flash: null | { text: string; id: number };
   /** Newly earned achievements, shown as a banner for a few seconds. */
-  toast: null | { ids: string[]; id: number };
+  toast: null | { items: ToastItem[]; id: number };
 }
 
 let state: GameState = loadLocal() ?? newGameState(detectLang());
@@ -36,22 +42,6 @@ function reportAway(s: GameState): void {
   log(s, 'log.workers.away', { h: `#${Math.round((ms / 3600_000) * 10) / 10}` }, 'sys');
   for (const [id, n] of entries) log(s, 'log.workers.got', { n, res: `@res.${id}` }, 'good');
 }
-export const transient: Transient = { busy: null, queue: 0, flash: null, toast: null };
-let toastSeq = 0;
-
-function achievements(): void {
-  const got = checkAchievements(state);
-  if (!got.length) return;
-  const id = ++toastSeq;
-  transient.toast = { ids: got, id };
-  window.setTimeout(() => {
-    if (transient.toast?.id === id) {
-      transient.toast = null;
-      emit();
-    }
-  }, 5000);
-}
-
 const listeners = new Set<() => void>();
 let saveTimer: number | undefined;
 
@@ -68,9 +58,46 @@ export function scheduleSave(): void {
   saveTimer = window.setTimeout(() => saveLocal(state), 400);
 }
 
+export const transient: Transient = { busy: null, queue: 0, flash: null, toast: null };
+let toastSeq = 0;
+
+/** Shows a banner (achievement earned, level reached) for a few seconds. */
+export function showToast(items: ToastItem[]): void {
+  if (!items.length) return;
+  const id = ++toastSeq;
+  transient.toast = { items, id };
+  window.setTimeout(() => {
+    if (transient.toast?.id === id) {
+      transient.toast = null;
+      emit();
+    }
+  }, 5000);
+}
+
+function achievements(): void {
+  showToast(checkAchievements(state).map((a) => ({ head: 'ach.unlocked', k: `ach.${a}` })));
+}
+
+/** Notices characters that levelled up during an action and celebrates it. */
+function levelUps(before: Map<number, number>): void {
+  const items: ToastItem[] = [];
+  for (const c of state.chars) {
+    const was = before.get(c.id) ?? c.level;
+    if (c.level > was) {
+      log(state, 'log.levelUp', { name: c.name, n: c.level }, 'gain');
+      items.push({ head: 'toast.levelUp', k: 'toast.levelText', p: { name: c.name, n: c.level } });
+    }
+  }
+  showToast(items);
+}
+
+const levelsNow = () => new Map(state.chars.map((c) => [c.id, c.level]));
+
 /** Mutates the game state, re-renders and saves. */
 export function update(fn: (s: GameState) => void): void {
+  const before = levelsNow();
   fn(state);
+  levelUps(before);
   state.editedAt = Date.now();
   achievements();
   emit();
