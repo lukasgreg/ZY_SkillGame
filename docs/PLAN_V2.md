@@ -13,6 +13,7 @@ and puts every new string in both `src/i18n/en.ts` and `src/i18n/cs.ts`.
 | D | Random dungeons: visible rooms, events, omens, affixes, final chest, loot items | not started |
 | E | Patterns for rare metals, hiring a master craftsman | not started |
 | F | Taming in the wild, INT-based control slots, better animal healing | not started |
+| G | Pet experience and levels | not started |
 
 ---
 
@@ -100,7 +101,13 @@ and puts every new string in both `src/i18n/en.ts` and `src/i18n/cs.ts`.
 - **Paperdoll:** an SVG figure in the Character tab with slots around it. Worn pieces are drawn on the body in the metal's colour. Clicking a slot lists the items in your pack that fit it.
 
 ## D. Random dungeons
-- **Every expedition is new:** a new seed each time, a random number of layers (`2 + clocks × 2` to `3 + clocks × 3`), and 1–4 rooms per layer with more cross-links.
+- **Every expedition is new and much bigger** (feedback: "much more nodes where to go, I don't want to be going again and again"):
+  - A new seed each time and **12–30 layers** depending on length.
+  - **2–5 rooms per layer** with cross-links, so there are many routes.
+  - **Side branches** that rejoin later, and dead ends that hold caches or a lair.
+  - **Two or three wings** that split near the start and meet again before the boss.
+  - The map scrolls horizontally, and the current room stays centred.
+  - Room-type weights change with depth and with the dungeon's theme, so no two runs feel alike.
 - **You can see what's next:** the types of rooms one step ahead are always shown on the map. Scouting reveals the whole map and the sealed passages.
 - **Room types:**
   - monster
@@ -179,3 +186,9 @@ and puts every new string in both `src/i18n/en.ts` and `src/i18n/cs.ts`.
 
 ## Order of work
 A → B → C → D → E → F. Each phase is committed and deployed when its tests pass.
+
+## G. Pet experience and levels
+- Pets gain experience from every monster killed while they fight beside you: an equal share of the kill XP, about 70% of what you get.
+- Pet levels run 1–30 and use the same XP curve as characters.
+- Each level gives a pet +4% hits, +3% damage and +1.0 fighting skill on top of the animal's base. Its health bar and the Stable show its level.
+- Bonded pets keep their level when brought back to life. Released pets lose it.
