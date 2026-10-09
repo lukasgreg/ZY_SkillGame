@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { activeChar } from '../engine/state';
 import { t } from '../i18n';
+import { AchievementToast, AchievementsPanel } from './AchievementsPanel';
 import { CharacterPanel } from './CharacterPanel';
 import { Card, JournalLines } from './common';
 import { Create } from './Create';
@@ -14,7 +15,7 @@ import { TownPanel } from './TownPanel';
 import { useGame } from './store';
 import { WorkersPanel } from './WorkersPanel';
 
-const TABS = ['gather', 'town', 'forge', 'workers', 'dungeon', 'skills', 'character', 'journal', 'settings'] as const;
+const TABS = ['gather', 'town', 'forge', 'workers', 'dungeon', 'skills', 'character', 'achievements', 'journal', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 function readTab(): Tab {
@@ -48,6 +49,7 @@ export function App() {
   return (
     <main class="shell">
       <Header c={c} />
+      <AchievementToast />
       <nav class="tabs" aria-label="Main">
         {TABS.map((id) => (
           <button key={id} class={`tab ${tab === id ? 'on' : ''}`} aria-current={tab === id ? 'page' : undefined} onClick={() => go(id)}>
@@ -78,6 +80,7 @@ export function App() {
           <JournalLines entries={s.journal} />
         </Card>
       )}
+      {tab === 'achievements' && <AchievementsPanel s={s} />}
       {tab === 'settings' && <SettingsPanel s={s} onNewChar={() => setCreating(true)} />}
     </main>
   );

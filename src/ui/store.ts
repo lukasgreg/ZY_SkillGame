@@ -8,6 +8,7 @@ import { tickWanderers } from '../engine/wanderers';
 import { catchUp } from '../engine/workers';
 import { tickContracts } from '../engine/contracts';
 import { decay } from '../engine/dungeon';
+import { checkAchievements } from '../engine/achievements';
 import { restPets, tickPets } from '../engine/pets';
 import type { ResourceId } from '../data/resources';
 import { detectLang, setLang } from '../i18n';
@@ -19,6 +20,8 @@ export interface Transient {
   queue: number;
   /** Last skill gain, for the floating "+0.1" flash. */
   flash: null | { text: string; id: number };
+  /** Newly earned achievements, shown as a banner for a few seconds. */
+  toast: null | { ids: string[]; id: number };
 }
 
 let state: GameState = loadLocal() ?? newGameState(detectLang());
@@ -33,7 +36,21 @@ function reportAway(s: GameState): void {
   log(s, 'log.workers.away', { h: `#${Math.round((ms / 3600_000) * 10) / 10}` }, 'sys');
   for (const [id, n] of entries) log(s, 'log.workers.got', { n, res: `@res.${id}` }, 'good');
 }
-export const transient: Transient = { busy: null, queue: 0, flash: null };
+export const transient: Transient = { busy: null, queue: 0, flash: null, toast: null };
+let toastSeq = 0;
+
+function achievements(): void {
+  const got = checkAchievements(state);
+  if (!got.length) return;
+  const id = ++toastSeq;
+  transient.toast = { ids: got, id };
+  window.setTimeout(() => {
+    if (transient.toast?.id === id) {
+      transient.toast = null;
+      emit();
+    }
+  }, 5000);
+}
 
 const listeners = new Set<() => void>();
 let saveTimer: number | undefined;
@@ -54,6 +71,7 @@ export function scheduleSave(): void {
 /** Mutates the game state, re-renders and saves. */
 export function update(fn: (s: GameState) => void): void {
   fn(state);
+  achievements();
   emit();
   scheduleSave();
 }
@@ -108,6 +126,7 @@ export function startClock(): void {
     const ph = isPowerHour();
     if (ph && !wasPowerHour) log(state, 'log.powerhour', undefined, 'sys');
     wasPowerHour = ph;
+    achievements();
     emit();
   }, 1000);
   window.addEventListener('beforeunload', () => saveLocal(state));

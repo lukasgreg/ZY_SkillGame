@@ -1,4 +1,4 @@
-import { SAVE_VERSION, type GameState } from './state';
+import { SAVE_VERSION, newStats, type GameState } from './state';
 
 const KEY = 'zy-skillgame-save';
 
@@ -29,6 +29,7 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
     version: 7,
     chars: s.chars.map((c: any) => ({ ...c, pets: [], run: c.run?.combat ? { ...c.run, combat: { ...c.run.combat, summon: null, summoned: false } } : c.run })),
   }),
+  7: (s) => ({ ...s, version: 8, stats: newStats(), achievements: {} }),
 };
 
 export function deserialize(json: string): GameState {

@@ -4,6 +4,7 @@ import type { DungeonId } from '../data/dungeons';
 import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
 import { feed, healPet, release, resurrect } from '../engine/pets';
+import { bump } from '../engine/achievements';
 import { camp, enter, fight, here, leave, lootCorpse, move, reengage, scout, useRepairKit, wayHome } from '../engine/dungeon';
 import { PLANS, type PlanId } from '../data/plans';
 import { abandon, accept, combineFragments, craftPlan, fortify, handIn } from '../engine/contracts';
@@ -63,6 +64,7 @@ export function gather(): void {
     withChar((s, c) => {
       if (canGather(c)) return; // something changed while swinging
       const r = pull(c, rng);
+      if (r.ok) bump(s, 'pulls');
       if (r.ok) log(s, 'log.gather.ok', { amount: r.amount, res: `@res.${r.res}` });
       else log(s, `log.fizzle.${loc}.${Math.floor(rng() * 3)}`, undefined, 'bad');
       noteGains(s, c, r.skill, r.gain, r.stat);
@@ -119,6 +121,8 @@ export function deliver(w: Wanderer): void {
   withChar((s, c) => {
     const live = s.wanderers.find((x) => x.id === w.id);
     if (live?.wantsRes && deliverGoods(s, c, live)) {
+      bump(s, 'sales');
+      bump(s, 'goldEarned', live.offer);
       log(s, 'log.wanderer.goods', { n: live.wantsRes.n, res: `@res.${live.wantsRes.id}`, name: live.name, gold: live.offer }, 'good');
     }
   });
@@ -210,6 +214,9 @@ export function craftItem(r: Recipe, metal: MetalId | null, n: number, runic = f
     withChar((s, c) => {
       if (canCraft(c, r, metal)) return;
       const res = craft(s, c, r, metal, rng, new Date(), runic);
+      if (res.ok) bump(s, 'crafts');
+      if (res.item?.quality === 'exceptional') bump(s, 'exceptional');
+      if (res.item?.runic) bump(s, 'runic');
       if (res.item) log(s, res.item.quality === 'exceptional' ? 'log.craft.exc' : 'log.craft.ok', { item: itemParam(res.item) }, res.item.quality === 'exceptional' ? 'gain' : undefined);
       else if (res.res) log(s, 'log.craft.res', { n: res.res.n, res: `@res.${res.res.id}` });
       else log(s, 'log.craft.fail', undefined, 'bad');
@@ -243,7 +250,11 @@ export function sellWanderer(w: Wanderer, it: ItemInstance): void {
     const item = c.pack.items.find((i) => i.uid === it.uid);
     if (!live || !item) return;
     const gold = wandererPays(live, item);
-    if (sellToWanderer(s, c, live, item)) log(s, 'log.wanderer.sold', { item: itemParam(item), name: live.name, gold }, 'good');
+    if (sellToWanderer(s, c, live, item)) {
+      bump(s, 'sales');
+      bump(s, 'goldEarned', gold);
+      log(s, 'log.wanderer.sold', { item: itemParam(item), name: live.name, gold }, 'good');
+    }
   });
 }
 
@@ -278,6 +289,8 @@ export function handInContract(k: Contract): void {
     if (!live) return;
     const r = handIn(s, c, live);
     if (r.done) {
+      bump(s, 'contracts');
+      bump(s, 'goldEarned', live.reward.gold);
       log(s, 'log.contract.done', { giver: live.giver, gold: live.reward.gold }, 'gain');
       if (live.reward.plan) log(s, 'log.contract.plan', { plan: `@plan.${live.reward.plan}` }, 'gain');
       if (live.reward.res) log(s, 'log.contract.res', { n: live.reward.res.n, res: `@res.${live.reward.res.id}` }, 'gain');
@@ -306,6 +319,10 @@ export function craftFromPlan(id: PlanId): void {
     withChar((s, c) => {
       const r = craftPlan(s, c, id, rng);
       if (!r) return;
+      if (r.ok) {
+        bump(s, 'plans');
+        bump(s, 'crafts');
+      }
       if (r.item) log(s, 'log.plan.made', { item: itemParam(r.item) }, 'gain');
       else if (r.res) log(s, 'log.craft.res', { n: r.res.n, res: `@res.${r.res.id}` }, 'gain');
       else log(s, 'log.plan.failed', { plan: `@plan.${id}` }, 'bad');
@@ -352,7 +369,14 @@ export function fightAction(a: Action): void {
     withChar((s, c) => {
       const d = c.run!.dungeon;
       const loot = c.run!.loot;
+      const cb = c.run!.combat!;
+      const pets = c.pets.length;
+      const bossBefore = c.run!.bossDown;
       const out = fight(s, c, a, rng);
+      if (c.pets.length > pets) bump(s, 'tamed');
+      if (out === 'won') bump(s, 'kills', cb.foes.filter((f) => f.hp <= 0).length);
+      if (out === 'died') bump(s, 'deaths');
+      if (!bossBefore && c.run?.bossDown) bump(s, 'bosses');
       if (out === 'died') log(s, 'log.dun.died', { d: `@dun.${d}` }, 'bad');
       else if (out === 'won' && c.run?.bossDown && here(c.run).type === 'boss') log(s, 'log.dun.bossDown', { d: `@dun.${d}`, gold: c.run.loot - loot }, 'gain');
     }),
@@ -388,7 +412,10 @@ export function reengageFoes(): void {
 
 export function lootMyCorpse(): void {
   withChar((s, c) => {
-    if (lootCorpse(c)) log(s, 'log.dun.corpseLooted', undefined, 'gain');
+    if (lootCorpse(c)) {
+      bump(s, 'recovered');
+      log(s, 'log.dun.corpseLooted', undefined, 'gain');
+    }
   });
 }
 

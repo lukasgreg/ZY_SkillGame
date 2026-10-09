@@ -124,6 +124,7 @@ export function WorkersPanel({ s, c }: { s: GameState; c: Character }) {
                   onClick={() =>
                     update((st) => {
                       const w = hire(st, job, defaultRng);
+                      if (w) st.stats.hires += 1;
                       if (w) log(st, 'log.workers.hired', { name: w.name, job: `@worker.job.${job}`, gold: cost }, 'good');
                     })
                   }

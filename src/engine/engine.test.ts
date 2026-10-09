@@ -612,3 +612,30 @@ describe('trainers', () => {
     expect(canTrainSkill(c, 'edged')).toBe(false);
   });
 });
+
+import { checkAchievements } from './achievements';
+
+describe('achievements', () => {
+  it('unlock once, from stats and from the state of the world', () => {
+    const { s, c } = setup();
+    c.skills.mining = 200;
+    for (const id of SKILL_IDS) if (c.skills[id] >= 300) c.skills[id] = 0;
+    expect(checkAchievements(s)).toEqual([]);
+    s.stats.pulls = 1;
+    c.skills.mining = 300;
+    expect(checkAchievements(s).sort()).toEqual(['firstPull', 'skill30']);
+    expect(checkAchievements(s)).toEqual([]);
+    expect(s.journal[s.journal.length - 1].k).toBe('log.achievement');
+  });
+
+  it('old saves migrate with empty stats', () => {
+    const { s } = setup();
+    const old = JSON.parse(JSON.stringify(s));
+    old.version = 7;
+    delete old.stats;
+    delete old.achievements;
+    const back = importSave(btoa(JSON.stringify(old)));
+    expect(back.stats.pulls).toBe(0);
+    expect(back.achievements).toEqual({});
+  });
+});

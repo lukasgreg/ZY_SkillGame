@@ -5,7 +5,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon';
@@ -235,10 +235,36 @@ export interface GameState {
   cleared: DungeonId[];
   contractOffers: Contract[];
   contracts: Contract[];
+  stats: Stats;
+  /** Achievement id → when it was earned. */
+  achievements: Record<string, number>;
   nextContractAt: number;
   uidSeq: number;
   lastSeen: number;
 }
+
+/** Lifetime counters shared by all characters in the save (they feed achievements). */
+export interface Stats {
+  pulls: number;
+  crafts: number;
+  exceptional: number;
+  runic: number;
+  plans: number;
+  sales: number;
+  contracts: number;
+  goldEarned: number;
+  hires: number;
+  kills: number;
+  bosses: number;
+  deaths: number;
+  recovered: number;
+  tamed: number;
+}
+
+export const newStats = (): Stats => ({
+  pulls: 0, crafts: 0, exceptional: 0, runic: 0, plans: 0, sales: 0, contracts: 0, goldEarned: 0,
+  hires: 0, kills: 0, bosses: 0, deaths: 0, recovered: 0, tamed: 0,
+});
 
 export function newGameState(lang: 'en' | 'cs'): GameState {
   return {
@@ -261,6 +287,8 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     cleared: [],
     contractOffers: [],
     contracts: [],
+    stats: newStats(),
+    achievements: {},
     nextContractAt: 0,
     uidSeq: 1,
     lastSeen: Date.now(),

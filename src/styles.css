@@ -368,3 +368,25 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
   .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
   .tab { white-space: nowrap; flex: none; }
 }
+
+/* ---------- achievements ---------- */
+.statgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px 16px; margin: 0; }
+.statgrid div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--brass); }
+.statgrid dt { color: var(--ink-soft); }
+.statgrid dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.achs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.achs li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: start; opacity: 0.55; }
+.achs li.got { opacity: 1; }
+.ach-mark { font-size: 18px; line-height: 1.2; color: var(--brass); }
+.achs li.got .ach-mark, .toast .ach-mark { color: var(--gold); }
+.toast {
+  position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 20;
+  display: flex; gap: 10px; align-items: center; max-width: calc(100% - 32px);
+  background: var(--ground-2); color: var(--on-ground); border: 1px solid var(--gold); padding: 8px 16px;
+  box-shadow: 0 4px 16px #0008; animation: toast-in 0.4s ease-out;
+}
+.toast .ach-mark { font-size: 26px; }
+.toast-head { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--gold); }
+.toast strong { display: block; font-family: var(--display); }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -12px); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
