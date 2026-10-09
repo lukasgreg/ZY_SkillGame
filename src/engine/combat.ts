@@ -116,6 +116,7 @@ export type Action =
   | { type: 'eat'; res: ResourceId }
   | { type: 'tame' }
   | { type: 'healPet' }
+  | { type: 'wait' }
   | { type: 'flee' };
 
 export type Outcome = 'continue' | 'won' | 'died' | 'fled';
@@ -145,13 +146,16 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const target = cb.foes.find((f) => f.hp > 0);
   if (!target) return;
   const mon = MONSTERS[target.kind];
-  const w = weaponInfo(c);
+  let w = weaponInfo(c);
   if (w.skill === 'archery') {
     if (!(c.pack.res.arrow ?? 0)) {
+      // Out of arrows: fight on with your fists.
+      w = { ...FISTS, item: null };
       say(run, 'fight.noArrows', undefined, 'bad');
-      return;
+    } else {
+      addRes(c.pack, 'arrow', -1);
+      cb.arrowsShot = (cb.arrowsShot ?? 0) + 1;
     }
-    addRes(c.pack, 'arrow', -1);
   }
   const atk = c.skills[w.skill] / 10;
   const p = clamp(hitChance(atk, mon.skill, c.skills.tactics / 10) + (opts.hitBonus ?? 0), 0.05, 0.97);
@@ -261,7 +265,7 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
   }
   const w = weaponInfo(c);
   const def = c.skills[w.skill] / 10;
-  const p = hitChance(mon.skill, def) * (cb.cowed > 0 ? 0.75 : 1);
+  const p = hitChance(mon.skill, def) * (cb.cowed > 0 ? 0.75 : 1) * (cb.guard ? 0.75 : 1);
   if (rng() >= p) {
     say(run, 'fight.foeMiss', { foe: foeName(f) });
     return false;
@@ -362,6 +366,7 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
     }
   }
   if (cb.cowed > 0) cb.cowed -= 1;
+  cb.guard = false;
   cb.round += 1;
   return cb.foes.every((f) => f.hp <= 0) ? 'won' : 'continue';
 }
@@ -418,6 +423,10 @@ function myTurn(c: Character, run: Run, cb: Combat, action: Action, rng: Rng): '
       cb.bandaging = true;
       say(run, 'fight.bandaging', undefined, 'sys');
       return;
+    case 'wait':
+      cb.guard = true;
+      say(run, 'fight.waiting', undefined, 'sys');
+      return;
     case 'eat':
       if (eat(c, action.res)) say(run, 'log.eat', { res: `@res.${action.res}` }, 'good');
       return;
@@ -433,6 +442,13 @@ function myTurn(c: Character, run: Run, cb: Combat, action: Action, rng: Rng): '
 
 /** Gold and drops for the defeated foes. */
 export function loot(c: Character, run: Run, foes: Foe[], rng: Rng): number {
+  // Pick up about 40% of the arrows you loosed.
+  const shot = run.combat?.arrowsShot ?? 0;
+  const back = Math.floor(shot * (0.3 + rng() * 0.2));
+  if (back > 0) {
+    addRes(c.pack, 'arrow', back);
+    say(run, 'fight.arrowsBack', { n: back }, 'good');
+  }
   let gold = 0;
   for (const f of foes) {
     const m = MONSTERS[f.kind];

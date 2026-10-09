@@ -50,7 +50,7 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
     if (slot && !(slot in equip)) equip[slot] = it.uid;
   }
   const res: Inventory['res'] = { bandage: prof === 'craftsman' ? 5 : 10 };
-  if (prof === 'ranger') res.arrow = 60;
+  if (prof === 'ranger') res.arrow = 150;
   const c: Character = {
     id: nextUid(s),
     name,

@@ -2,6 +2,11 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'fight.wait': 'Vyčkat a krýt se',
+  'fight.waitTip': 'Vynecháš útok; nepřátelé tě toto kolo zasáhnou o 25 % méně často.',
+  'fight.waiting': 'Vyčkáváš a kryješ se.',
+  'fight.noArrowsFists': 'Došly šípy: budeš bojovat pěstmi.',
+  'fight.arrowsBack': 'Sesbíráno {n} šípů, které jdou ještě použít.',
   'dun.corpseGrabbed': 'Dostáváš se ke svému tělu a bereš zpět vše, co neslo!',
   'dun.foesWounded_one': 'Příšera, která tu zůstala, pořád čeká, stále zraněná.',
   'dun.foesWounded_few': 'Příšery, které tu zůstaly, tu pořád čekají, stále zraněné ({count}).',
@@ -266,7 +271,7 @@ export const cs: Record<MessageKey, string> & Record<string, string> = {
   'fight.flee': 'Utéct ({p} %)',
   'fight.arrows': 'Zbývá šípů: {n}',
   'fight.stunnedTag': 'omráčen',
-  'fight.noArrows': 'Došly ti šípy!',
+  'fight.noArrows': 'Došly šípy! Bojuješ pěstmi.',
   'fight.miss': 'Míjíš: {foe}.',
   'fight.hit': 'Zásah: {foe} za {dmg}.',
   'fight.crit': 'Přesná rána! {foe} utrží {dmg}.',

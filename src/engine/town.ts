@@ -18,7 +18,7 @@ function pressure(s: GameState, id: ResourceId, now: number): number {
 /** What the trader pays for one unit right now. Selling a lot pushes the price down (Andaria's iron trader). */
 export function sellPrice(s: GameState, id: ResourceId, now = Date.now()): number {
   const base = RESOURCES[id].price;
-  return Math.max(1, Math.round((base / (1 + pressure(s, id, now) / 60)) * 10) / 10);
+  return Math.max(0.1, Math.round((base / (1 + pressure(s, id, now) / 60)) * 10) / 10);
 }
 
 /** Sells `n` units one by one so the price slides as you sell. Returns gold earned. */
@@ -47,12 +47,13 @@ export function buyItem(s: GameState, c: Character, def: ItemDefId): ItemInstanc
 }
 
 /** Provisioner price for raw goods (logs until Lumberjacking arrives). */
-export function buyResPrice(id: ResourceId): number {
-  return Math.ceil(RESOURCES[id].price * 1.5);
+/** What the provisioner charges for `n` units (cheap goods like arrows cost a fraction of a gold piece each). */
+export function buyResPrice(id: ResourceId, n = 1): number {
+  return Math.ceil(RESOURCES[id].price * 1.5 * n);
 }
 
 export function buyRes(c: Character, id: ResourceId, n: number): boolean {
-  const cost = buyResPrice(id) * n;
+  const cost = buyResPrice(id, n);
   if (c.gold < cost) return false;
   c.gold -= cost;
   addRes(c.pack, id, n);

@@ -166,6 +166,10 @@ export interface Combat {
   cowed: number;
   /** Leap: you act first next round. */
   first: boolean;
+  /** Waiting this round: enemies hit you less. */
+  guard?: boolean;
+  /** Arrows loosed this fight; some can be picked up afterwards. */
+  arrowsShot?: number;
 }
 
 export interface Run {

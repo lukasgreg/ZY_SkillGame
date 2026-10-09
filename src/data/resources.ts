@@ -77,7 +77,7 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   herb: r('herb', 0.2, 6, 0.6),
   bloodmoss: r('bloodmoss', 0.2, 16, 1.2),
 
-  arrow: r('arrow', 0.05, 1, 0),
+  arrow: r('arrow', 0.05, 0.25, 0),
   bread: r('bread', 0.3, 3, 0, { stamina: 10, hp: 5 }),
   cookedFish: r('cookedFish', 0.4, 4, 0, { stamina: 15, hp: 5 }),
   fishPie: r('fishPie', 0.6, 10, 0.3, { stamina: 25, hp: 10 }),

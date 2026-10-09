@@ -220,6 +220,9 @@ function Fight({ c, run }: { c: Character; run: Run }) {
             {t('fight.healPet', { n: vetHeal(c) })}
           </button>
         )}
+        <button class="btn" disabled={busy} onClick={() => fightAction({ type: 'wait' })} title={t('fight.waitTip')}>
+          {t('fight.wait')}
+        </button>
         <button class="btn" disabled={busy} onClick={() => fightAction({ type: 'flee' })}>
           {t('fight.flee', { p: Math.round(fleeChance(c, cb) * 100) })}
         </button>
@@ -229,7 +232,11 @@ function Fight({ c, run }: { c: Character; run: Run }) {
           </button>
         )}
       </div>
-      {usesArrows(c) && <p class="small muted">{t('fight.arrows', { n: c.pack.res.arrow ?? 0 })}</p>}
+      {usesArrows(c) && (
+        <p class={`small ${(c.pack.res.arrow ?? 0) ? 'muted' : 'warn'}`}>
+          {(c.pack.res.arrow ?? 0) ? t('fight.arrows', { n: c.pack.res.arrow ?? 0 }) : t('fight.noArrowsFists')}
+        </p>
+      )}
     </Card>
   );
 }

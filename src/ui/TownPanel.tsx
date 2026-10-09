@@ -11,7 +11,7 @@ import { Pack } from './Pack';
 import { transient, update } from './store';
 
 const SHOP: ItemDefId[] = ['pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe', 'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit'];
-const GOODS: [ResourceId, number][] = [['log', 5], ['bandage', 10], ['arrow', 20], ['flax', 5]];
+const GOODS: [ResourceId, number][] = [['log', 5], ['bandage', 10], ['arrow', 50], ['flax', 5]];
 
 export function TownPanel({ s, c }: { s: GameState; c: Character }) {
   const busy = transient.busy;
@@ -151,8 +151,8 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
                   <th>{t(`res.${id}`)}</th>
                   <td />
                   <td class="actions">
-                    <button class="btn btn-small" disabled={c.gold < buyResPrice(id) * n} onClick={() => buyResource(id, n)}>
-                      {t('town.buyN', { n, p: buyResPrice(id) * n })}
+                    <button class="btn btn-small" disabled={c.gold < buyResPrice(id, n)} onClick={() => buyResource(id, n)}>
+                      {t('town.buyN', { n, p: buyResPrice(id, n) })}
                     </button>
                   </td>
                 </tr>

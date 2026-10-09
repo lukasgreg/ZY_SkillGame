@@ -272,7 +272,7 @@ export function sellToSmith(it: ItemInstance): void {
 
 export function buyResource(id: ResourceId, n: number): void {
   withChar((s, c) => {
-    if (buyRes(c, id, n)) log(s, 'log.boughtRes', { n, res: `@res.${id}`, gold: buyResPrice(id) * n }, 'good');
+    if (buyRes(c, id, n)) log(s, 'log.boughtRes', { n, res: `@res.${id}`, gold: buyResPrice(id, n) }, 'good');
   });
 }
 

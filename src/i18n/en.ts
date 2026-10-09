@@ -5,6 +5,11 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'fight.wait': 'Wait and guard',
+  'fight.waitTip': 'Skip your attack; enemies hit you 25% less often this round.',
+  'fight.waiting': 'You hold back and guard yourself.',
+  'fight.noArrowsFists': 'No arrows left: you will fight with your fists.',
+  'fight.arrowsBack': 'You gather {n} arrows that can still be used.',
   'dun.corpseGrabbed': 'You reach your body and snatch back everything it carried!',
   'dun.foesWounded_one': 'The monster you left here is still waiting, still wounded.',
   'dun.foesWounded_other': 'The {count} monsters you left here are still waiting, still wounded.',
@@ -266,7 +271,7 @@ export const en = {
   'fight.flee': 'Flee ({p} %)',
   'fight.arrows': 'Arrows left: {n}',
   'fight.stunnedTag': 'stunned',
-  'fight.noArrows': 'You have no arrows!',
+  'fight.noArrows': 'No arrows! You punch instead.',
   'fight.miss': 'You miss {foe}.',
   'fight.hit': 'You hit {foe} for {dmg}.',
   'fight.crit': 'A precise strike! {foe} takes {dmg}.',

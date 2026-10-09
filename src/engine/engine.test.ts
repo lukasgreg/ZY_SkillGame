@@ -564,7 +564,7 @@ describe('taming and pets', () => {
   it('rangers start with a bow and arrows', () => {
     const { c } = ranger();
     expect(weaponInfo(c).skill).toBe('archery');
-    expect(c.pack.res.arrow).toBe(60);
+    expect(c.pack.res.arrow).toBe(150);
   });
 
   it('taming needs skill and control slots; a tamed animal fights for you', () => {
@@ -720,5 +720,50 @@ describe('cloud save (gist)', () => {
     const empty = newGameState('en');
     empty.editedAt = 9_999_999;
     expect(newer(empty, a)).toBe('cloud');
+  });
+});
+
+import { buyResPrice } from './town';
+
+describe('archery supplies', () => {
+  it('arrows are cheap: fifty for under twenty gold', () => {
+    expect(buyResPrice('arrow', 50)).toBeLessThan(20);
+    expect(buyResPrice('log', 5)).toBe(15);
+  });
+
+  it('without arrows a ranger punches; arrows are partly recovered after a win', () => {
+    const { s, c } = ranger(12);
+    const rng = mulberry32(12);
+    enter(s, c, 'wilds', rng);
+    c.run!.combat = startCombat(['boar']);
+    c.pack.res.arrow = 0;
+    c.skills.blunt = 400;
+    const blunt = c.skills.blunt;
+    for (let i = 0; i < 300 && c.run?.combat; i++) {
+      c.hp = 999;
+      fight(s, c, { type: 'attack' }, rng);
+    }
+    expect(c.run!.log.some((e) => e.k === 'fight.noArrows')).toBe(true);
+    expect(c.run!.combat).toBe(null);
+    expect(c.skills.blunt).toBeGreaterThanOrEqual(blunt);
+    c.pack.res.arrow = 20;
+    c.run!.combat = startCombat(['boar']);
+    c.skills.archery = 1000;
+    for (let i = 0; i < 30 && c.run?.combat; i++) {
+      c.hp = 999;
+      fight(s, c, { type: 'attack' }, rng);
+    }
+    expect(c.run!.combat).toBe(null);
+    expect(c.pack.res.arrow).toBeLessThanOrEqual(20);
+  });
+
+  it('waiting guards: enemies hit less that round', () => {
+    const { s, c } = ranger(13);
+    const rng = mulberry32(13);
+    enter(s, c, 'wilds', rng);
+    c.run!.combat = startCombat(['wolf']);
+    fight(s, c, { type: 'wait' }, rng);
+    expect(c.run!.log.some((e) => e.k === 'fight.waiting')).toBe(true);
+    expect(c.run!.combat!.guard).toBe(false);
   });
 });
