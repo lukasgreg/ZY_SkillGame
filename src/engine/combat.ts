@@ -1,4 +1,4 @@
-import { MONSTERS, TAMEABLE, type MonsterId } from '../data/dungeons';
+import { MONSTERS, TAMEABLE, type Family, type MonsterId } from '../data/dungeons';
 import { canControl, healPet, petMaxHp, petSkillCap, tryTame } from './pets';
 import { ITEMS, METALS, slotOf, type Slot } from '../data/items';
 import { RESOURCES, type ResourceId } from '../data/resources';
@@ -56,6 +56,21 @@ export function armorValue(c: Character): number {
     a += (d.armor ?? 0) * (it.mat ? METALS[it.mat].armorMult : 1) * qualityMult(it);
   }
   return Math.round(a * 10) / 10;
+}
+
+/** Damage still taken from a family after armour of warding metals (silver vs undead…), weighted by each piece's share of armour. */
+export function wardMult(c: Character, fam: Family): number {
+  const total = armorValue(c);
+  if (!total) return 1;
+  let cut = 0;
+  for (const slot of ['shield', 'head', 'body'] as Slot[]) {
+    const it = equipped(c, slot);
+    const w = it?.mat ? METALS[it.mat].wards?.[fam] : undefined;
+    if (!it || w === undefined) continue;
+    const share = ((ITEMS[it.def].armor ?? 0) * METALS[it.mat!].armorMult * qualityMult(it)) / total;
+    cut += share * (1 - w);
+  }
+  return 1 - cut;
 }
 
 export function usesArrows(c: Character): boolean {
@@ -172,7 +187,8 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const g3 = trySkillGain(c, 'anatomy', p, true, rng, { ...gainOpts(mon.skill, now), mult: 0.5 });
   if (g3) say(run, 'log.gain', { skill: '@skill.anatomy', amount: `#${g3 / 10}`, value: `#${c.skills.anatomy / 10}` }, 'gain');
   const it = w.item;
-  const metal = it?.mat ? METALS[it.mat].dmgMult : 1;
+  const md = it?.mat ? METALS[it.mat] : null;
+  const metal = (md?.dmgMult ?? 1) * (md?.slays?.[mon.family] ?? 1);
   const q = it ? qualityMult(it) : 1;
   const bonus = 1 + c.skills.tactics / 2000 + c.skills.anatomy / 2000 + c.stats.str / 300;
   const crit = rng() < c.skills.anatomy / 2000;
@@ -180,6 +196,12 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   dmg = Math.max(1, Math.round(dmg - mon.armor * (0.5 + rng() * 0.5)));
   target.hp -= dmg;
   say(run, crit ? 'fight.crit' : 'fight.hit', { foe: foeName(target), dmg }, 'good');
+  if (md?.slays?.[mon.family]) say(run, 'fight.slay', { metal: `@mat.${md.id}`, foe: foeName(target) }, 'gain');
+  if (md?.drain) {
+    const heal = Math.max(1, Math.round(dmg * md.drain));
+    c.hp = Math.min(maxHp(c), c.hp + heal);
+    say(run, 'fight.drain', { n: heal }, 'good');
+  }
   if (it && chance(rng, 0.3) && wear(c, it)) {
     delete c.equip.weapon;
     say(run, 'log.tool.broke', { item: `%${it.def}|${it.mat ?? ''}|${it.quality === 'exceptional' ? 1 : 0}|${it.runic ? 1 : 0}` }, 'bad');
@@ -287,7 +309,7 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
   }
   const armor = armorValue(c);
   const reduce = c.stance === 'defensive' ? armor * 0.75 : armor * (0.4 + rng() * 0.6);
-  const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * STANCE_TAKEN[c.stance] - reduce));
+  const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * STANCE_TAKEN[c.stance] * wardMult(c, mon.family) - reduce));
   c.hp -= dmg;
   say(run, 'fight.hurt', { foe: foeName(f), dmg }, 'bad');
   if (chance(rng, 0.25)) {
@@ -460,6 +482,8 @@ export function loot(c: Character, run: Run, foes: Foe[], rng: Rng): number {
       }
     }
   }
+  const find = weaponInfo(c).item?.mat ? METALS[weaponInfo(c).item!.mat!].goldFind ?? 0 : 0;
+  gold = Math.round(gold * (1 + find));
   c.gold += gold;
   run.loot += gold;
   if (gold) say(run, 'fight.gold', { gold }, 'good');

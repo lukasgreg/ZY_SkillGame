@@ -157,7 +157,7 @@ function Fight({ c, run }: { c: Character; run: Run }) {
         {cb.foes.map((f, i) => (
           <li key={i} class={f.hp <= 0 ? 'dead' : ''}>
             <span>
-              {t(`mon.${f.kind}`)}
+              {t(`mon.${f.kind}`)} <span class="muted small">({t(`family.${MONSTERS[f.kind].family}`)})</span>
               {f.stunned > 0 && <span class="muted small"> · {t('fight.stunnedTag')}</span>}
             </span>
             <Meter value={f.hp} max={MONSTERS[f.kind].hp} kind="hp" />

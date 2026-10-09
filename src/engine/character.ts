@@ -1,6 +1,6 @@
 import { PROFESSIONS, RACES, skillCap, type ProfessionId, type RaceId } from '../data/professions';
 import { SKILL_IDS, type SkillId, type StatId } from '../data/skills';
-import { ITEMS, slotOf, type ItemDefId } from '../data/items';
+import { ITEMS, itemWeight, slotOf, type ItemDefId } from '../data/items';
 import { RESOURCES } from '../data/resources';
 import { randInt, type Rng } from './rng';
 import { maxHp, maxStamina } from './skills';
@@ -89,7 +89,7 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
 export function packWeight(inv: Inventory): number {
   let w = 0;
   for (const [id, n] of Object.entries(inv.res)) w += RESOURCES[id as keyof typeof RESOURCES].weight * (n ?? 0);
-  for (const it of inv.items) w += ITEMS[it.def].weight;
+  for (const it of inv.items) w += itemWeight(it.def, it.mat);
   return Math.round(w * 10) / 10;
 }
 

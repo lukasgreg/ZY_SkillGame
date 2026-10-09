@@ -43,7 +43,7 @@ export function smeltChance(c: Character, ore: ResourceId): number {
   if (!sm) return 0;
   const skill = c.skills.mining / 10;
   if (skill < sm.min) return 0;
-  return 0.45 + 0.5 * clamp((skill - sm.min) / (sm.max - sm.min), 0, 1);
+  return (0.45 + 0.5 * clamp((skill - sm.min) / (sm.max - sm.min), 0, 1)) * (sm.luck ?? 1);
 }
 
 /** Smelts 2 ore into 1 bar at the town forge. A failure wastes 1 ore. */

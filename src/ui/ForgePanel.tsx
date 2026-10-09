@@ -189,7 +189,7 @@ export function ForgePanel({ c }: { c: Character }) {
           {skill === 'blacksmithing' && (
             <div class="metals" role="radiogroup" aria-label={t('forge.metal')}>
               {METAL_IDS.map((m) => (
-                <button key={m} role="radio" aria-checked={metal === m} class={`metal ${metal === m ? 'on' : ''}`} onClick={() => setMetal(m)}>
+                <button key={m} role="radio" aria-checked={metal === m} class={`metal ${metal === m ? 'on' : ''}`} onClick={() => setMetal(m)} title={m === 'iron' ? undefined : t(`metal.fx.${m}`)}>
                   {t(`res.${METALS[m].bar}`)} <span class="muted">({c.pack.res[METALS[m].bar] ?? 0})</span>
                 </button>
               ))}
@@ -201,6 +201,7 @@ export function ForgePanel({ c }: { c: Character }) {
               {t('forge.useRunic', { n: hammer.dur })}
             </label>
           )}
+          {skill === 'blacksmithing' && metal !== 'iron' && <p class="small muted metal-fx">{t(`metal.fx.${metal}`)}</p>}
           <WorkBar />
           <ul class="recipes">
             {recipes.map((r) => (

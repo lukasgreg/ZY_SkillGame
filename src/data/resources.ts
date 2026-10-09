@@ -5,7 +5,7 @@ export const RESOURCE_IDS = [
   'ironOre', 'copperOre', 'silverOre', 'goldOre', 'mithrilOre',
   'clay', 'stone', 'coal', 'sandstone', 'marble', 'obsidian', 'sulfur', 'roughGem',
   // smelting
-  'ironBar', 'steelBar', 'copperBar', 'silverBar', 'goldBar', 'mithrilBar',
+  'ironBar', 'steelBar', 'copperBar', 'silverBar', 'goldBar', 'mithrilBar', 'darkIronBar', 'blackrockOre', 'blackrockBar',
   // lumberjacking
   'log', 'oakLog', 'ashLog', 'yewLog', 'heartwood', 'resin',
   // fishing
@@ -57,6 +57,9 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   silverBar: r('silverBar', 0.5, 20, 0.6),
   goldBar: r('goldBar', 0.5, 36, 1),
   mithrilBar: r('mithrilBar', 0.5, 105, 2),
+  darkIronBar: r('darkIronBar', 0.5, 80, 1.5),
+  blackrockOre: r('blackrockOre', 1, 70, 2.2),
+  blackrockBar: r('blackrockBar', 0.5, 150, 2.2),
 
   log: r('log', 2, 2, 0),
   oakLog: r('oakLog', 2, 4, 0.3),
@@ -100,7 +103,10 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
  * Smelting at the forge uses the Mining skill. Two ore make one bar; a failure wastes one ore.
  * Ranges loosely follow Andaria's smelting table.
  */
-export const SMELTING: Partial<Record<ResourceId, { bar: ResourceId; min: number; max: number }>> = {
+export const SMELTING: Partial<Record<ResourceId, { bar: ResourceId; min: number; max: number; luck?: number }>> = {
+  /** Andaria's dark metal: only master miners coax it from coal, and rarely. */
+  coal: { bar: 'darkIronBar', min: 90, max: 100, luck: 0.12 },
+  blackrockOre: { bar: 'blackrockBar', min: 80, max: 100 },
   ironOre: { bar: 'ironBar', min: 0, max: 40 },
   copperOre: { bar: 'copperBar', min: 25, max: 60 },
   silverOre: { bar: 'silverBar', min: 40, max: 75 },
@@ -135,6 +141,7 @@ export const YIELDS: Partial<Record<ResourceId, Yield>> = {
   obsidian: y('mining', 30, 100, 2),
   sulfur: y('mining', 40, 100, 3),
   roughGem: y('mining', 75, 110, 1),
+  blackrockOre: y('mining', 85, 115, 1),
 
   log: y('lumberjacking', 0, 30, 3),
   oakLog: y('lumberjacking', 25, 55, 3),
@@ -184,7 +191,7 @@ export const AREAS: Record<GatherLoc, Area[]> = {
     area(1, 0, [['ironOre', 10], ['stone', 4], ['clay', 3], ['coal', 3]]),
     area(2, 30, [['ironOre', 4], ['copperOre', 8], ['silverOre', 4], ['coal', 3], ['sandstone', 3], ['marble', 2]]),
     area(3, 55, [['copperOre', 3], ['silverOre', 6], ['goldOre', 5], ['marble', 3], ['obsidian', 2], ['sulfur', 2], ['roughGem', 1]]),
-    area(4, 80, [['goldOre', 5], ['mithrilOre', 3], ['obsidian', 3], ['roughGem', 2]], true),
+    area(4, 80, [['goldOre', 5], ['mithrilOre', 3], ['blackrockOre', 2], ['obsidian', 3], ['roughGem', 2]], true),
   ],
   forest: [
     area(1, 0, [['log', 10], ['oakLog', 3]]),

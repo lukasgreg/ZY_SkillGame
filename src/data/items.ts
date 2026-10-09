@@ -1,3 +1,4 @@
+import type { Family } from './dungeons';
 import type { ResourceId } from './resources';
 import type { SkillId } from './skills';
 
@@ -93,7 +94,7 @@ export const ITEMS: Record<ItemDefId, ItemDef> = {
   ancientBow: weapon('ancientBow', 'archery', [18, 28], 1.1, 4, 110, 800, 'm', 'bowcraft'),
 };
 
-export const METAL_IDS = ['iron', 'steel', 'copper', 'silver', 'gold', 'mithril'] as const;
+export const METAL_IDS = ['iron', 'copper', 'steel', 'silver', 'gold', 'darkIron', 'mithril', 'blackrock'] as const;
 export type MetalId = (typeof METAL_IDS)[number];
 
 export interface MetalDef {
@@ -107,16 +108,37 @@ export interface MetalDef {
   rarity: number;
   dmgMult: number;
   armorMult: number;
+  /** Rare metals need a pattern to craft (docs/PLAN_V2.md, phase E). */
+  rare: boolean;
+  /** Weapon damage multiplier against monster families (silver vs undead…). */
+  slays?: Partial<Record<Family, number>>;
+  /** Armour: share of damage still taken from these families (0.75 = 25% less). */
+  wards?: Partial<Record<Family, number>>;
+  /** Weapon heals this share of the damage it deals. */
+  drain?: number;
+  /** Weapon: extra share of gold from kills. */
+  goldFind?: number;
+  /** Item weight multiplier. */
+  weightMult?: number;
 }
 
+const metal = (d: Omit<MetalDef, 'rare'> & { rare?: boolean }): MetalDef => ({ rare: false, ...d });
+
 export const METALS: Record<MetalId, MetalDef> = {
-  iron: { id: 'iron', bar: 'ironBar', offset: 0, durMult: 1, priceMult: 1, rarity: 0, dmgMult: 1, armorMult: 1 },
-  steel: { id: 'steel', bar: 'steelBar', offset: 10, durMult: 1.3, priceMult: 1.8, rarity: 0.4, dmgMult: 1.1, armorMult: 1.15 },
-  copper: { id: 'copper', bar: 'copperBar', offset: 15, durMult: 1.1, priceMult: 1.6, rarity: 0.3, dmgMult: 1.05, armorMult: 1.05 },
-  silver: { id: 'silver', bar: 'silverBar', offset: 25, durMult: 1.15, priceMult: 2.6, rarity: 0.6, dmgMult: 1.1, armorMult: 1.1 },
-  gold: { id: 'gold', bar: 'goldBar', offset: 35, durMult: 0.9, priceMult: 4, rarity: 1, dmgMult: 1, armorMult: 1 },
-  mithril: { id: 'mithril', bar: 'mithrilBar', offset: 50, durMult: 1.8, priceMult: 8, rarity: 2, dmgMult: 1.3, armorMult: 1.35 },
+  iron: metal({ id: 'iron', bar: 'ironBar', offset: 0, durMult: 1, priceMult: 1, rarity: 0, dmgMult: 1, armorMult: 1 }),
+  copper: metal({ id: 'copper', bar: 'copperBar', offset: 15, durMult: 1.1, priceMult: 1.6, rarity: 0.3, dmgMult: 1.05, armorMult: 1.05 }),
+  steel: metal({ id: 'steel', bar: 'steelBar', offset: 10, durMult: 1.3, priceMult: 1.8, rarity: 0.4, dmgMult: 1.1, armorMult: 1.15 }),
+  silver: metal({ id: 'silver', bar: 'silverBar', offset: 25, durMult: 1.15, priceMult: 2.6, rarity: 0.6, dmgMult: 1.1, armorMult: 1.1, rare: true, slays: { undead: 1.5 }, wards: { undead: 0.75 } }),
+  gold: metal({ id: 'gold', bar: 'goldBar', offset: 35, durMult: 0.9, priceMult: 4, rarity: 1, dmgMult: 1, armorMult: 1, rare: true, goldFind: 0.25 }),
+  darkIron: metal({ id: 'darkIron', bar: 'darkIronBar', offset: 45, durMult: 1.4, priceMult: 6, rarity: 1.5, dmgMult: 1.2, armorMult: 1.2, rare: true, drain: 0.15 }),
+  mithril: metal({ id: 'mithril', bar: 'mithrilBar', offset: 50, durMult: 1.8, priceMult: 8, rarity: 2, dmgMult: 1.3, armorMult: 1.35, rare: true, weightMult: 0.5 }),
+  blackrock: metal({ id: 'blackrock', bar: 'blackrockBar', offset: 55, durMult: 1.6, priceMult: 9, rarity: 2.2, dmgMult: 1.25, armorMult: 1.3, rare: true, slays: { gnarl: 1.5, dragon: 1.5 }, wards: { gnarl: 0.8, dragon: 0.8 } }),
 };
+
+/** Carried weight of an item (mithril is half as heavy). */
+export function itemWeight(def: ItemDefId, mat?: MetalId): number {
+  return ITEMS[def].weight * (mat ? METALS[mat].weightMult ?? 1 : 1);
+}
 
 export type Slot = 'weapon' | 'shield' | 'head' | 'body';
 

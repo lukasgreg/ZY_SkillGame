@@ -10,8 +10,11 @@ export const MONSTER_IDS = [
 ] as const;
 export type MonsterId = (typeof MONSTER_IDS)[number];
 
+export type Family = 'beast' | 'humanoid' | 'undead' | 'gnarl' | 'dragon';
+
 export interface MonsterDef {
   id: MonsterId;
+  family: Family;
   hp: number;
   /** Fighting skill in whole points: used for its hit chance, your hit chance against it, and skill gain limits. */
   skill: number;
@@ -24,8 +27,17 @@ export interface MonsterDef {
   drops?: [ResourceId, number, number, number][];
 }
 
+const FAMILY: Record<MonsterId, Family> = {
+  rat: 'beast', smuggler: 'humanoid', thug: 'humanoid', smugglerChief: 'humanoid',
+  iceBat: 'beast', frostWolf: 'beast', caveTroll: 'humanoid', frostfang: 'beast',
+  skeleton: 'undead', ghoul: 'undead', wraith: 'undead', hollowLord: 'undead',
+  zombie: 'undead', boneKnight: 'undead', lichAcolyte: 'undead', bonepriest: 'undead',
+  gnarlScout: 'gnarl', gnarlBrute: 'gnarl', gnarlShaman: 'gnarl', gnarlWarlord: 'gnarl',
+  boar: 'beast', wolf: 'beast', bear: 'beast', direwolf: 'beast', drake: 'dragon',
+};
+
 const m = (id: MonsterId, hp: number, skill: number, dmg: [number, number], armor: number, speed: number, gold: [number, number], drops?: MonsterDef['drops']): MonsterDef => ({
-  id, hp, skill, dmg, armor, speed, gold, drops,
+  id, family: FAMILY[id], hp, skill, dmg, armor, speed, gold, drops,
 });
 
 export const MONSTERS: Record<MonsterId, MonsterDef> = {
@@ -50,7 +62,7 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
   bonepriest: m('bonepriest', 280, 84, [16, 26], 6, 10, [300, 500], [['etherealOre', 0.8, 3, 5], ['planFragment', 1, 2, 3], ['wayHome', 0.5, 1, 1]]),
 
   gnarlScout: m('gnarlScout', 65, 68, [10, 16], 3, 14, [15, 35]),
-  gnarlBrute: m('gnarlBrute', 115, 78, [14, 24], 6, 5, [25, 55]),
+  gnarlBrute: m('gnarlBrute', 115, 78, [14, 24], 6, 5, [25, 55], [['blackrockOre', 0.3, 1, 3]]),
   gnarlShaman: m('gnarlShaman', 125, 88, [16, 26], 4, 11, [60, 120], [['etherealOre', 0.4, 1, 3], ['planFragment', 0.25, 1, 1]]),
   gnarlWarlord: m('gnarlWarlord', 400, 96, [20, 32], 8, 10, [500, 900], [['dragonScale', 0.8, 2, 4], ['planFragment', 1, 2, 4], ['wayHome', 0.6, 1, 2]]),
 

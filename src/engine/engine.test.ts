@@ -805,3 +805,36 @@ describe('levels', () => {
     expect(statsAt(c, 50).str).toBe(90);
   });
 });
+
+import { wardMult } from './combat';
+import { itemWeight, METALS } from '../data/items';
+import { MONSTERS } from '../data/dungeons';
+import { smeltChance } from './craft';
+
+describe('metals', () => {
+  it('silver slays undead, blackrock gnarl; every monster has a family', () => {
+    expect(METALS.silver.slays?.undead).toBe(1.5);
+    expect(METALS.blackrock.slays?.gnarl).toBe(1.5);
+    expect(Object.values(MONSTERS).every((m) => !!m.family)).toBe(true);
+  });
+
+  it('silver armour wards against undead in proportion to its share', () => {
+    const { c } = warrior();
+    const shield = c.pack.items.find((i) => i.uid === c.equip.shield)!;
+    expect(wardMult(c, 'undead')).toBe(1);
+    shield.mat = 'silver';
+    const w = wardMult(c, 'undead');
+    expect(w).toBeLessThan(1);
+    expect(w).toBeGreaterThan(0.75);
+  });
+
+  it('mithril is half as heavy; dark iron comes rarely from coal for master miners', () => {
+    expect(itemWeight('platemail', 'mithril')).toBe(itemWeight('platemail') / 2);
+    const { c } = setup();
+    c.skills.mining = 850;
+    expect(smeltChance(c, 'coal')).toBe(0);
+    c.skills.mining = 1000;
+    expect(smeltChance(c, 'coal')).toBeGreaterThan(0);
+    expect(smeltChance(c, 'coal')).toBeLessThan(0.15);
+  });
+});
