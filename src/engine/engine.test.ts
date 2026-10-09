@@ -829,12 +829,56 @@ describe('metals', () => {
   });
 
   it('mithril is half as heavy; dark iron comes rarely from coal for master miners', () => {
-    expect(itemWeight('platemail', 'mithril')).toBe(itemWeight('platemail') / 2);
+    expect(itemWeight('plateChest', 'mithril')).toBe(itemWeight('plateChest') / 2);
     const { c } = setup();
     c.skills.mining = 850;
     expect(smeltChance(c, 'coal')).toBe(0);
     c.skills.mining = 1000;
     expect(smeltChance(c, 'coal')).toBeGreaterThan(0);
     expect(smeltChance(c, 'coal')).toBeLessThan(0.15);
+  });
+});
+
+import { roundStamina } from './combat';
+import { pullStamina } from './gather';
+import { ITEMS as ALL_ITEMS, slotOf } from '../data/items';
+
+describe('armour pieces and weight', () => {
+  it('five families of six pieces, each with a recipe', () => {
+    const pieces = Object.keys(ALL_ITEMS).filter((d) => ALL_ITEMS[d as keyof typeof ALL_ITEMS].kind === 'armor');
+    expect(pieces.length).toBe(30);
+    expect(slotOf('plateHands')).toBe('hands');
+    expect(RECIPES.some((r) => r.id === 'plateChest' && r.bars! > 20)).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'leatherChest' && r.inputs?.hide)).toBe(true);
+  });
+
+  it('plate needs strength; heavy armour costs stamina each round', () => {
+    const { c } = warrior();
+    c.pack.items.push({ uid: 6001, def: 'plateChest', dur: 60, maxDur: 60, quality: 'normal' });
+    c.stats.str = 40;
+    expect(equip(c, 6001)).toBe(false);
+    c.stats.str = 60;
+    expect(equip(c, 6001)).toBe(true);
+    expect(roundStamina(c)).toBeGreaterThanOrEqual(1);
+  });
+
+  it('a heavy pack makes gathering more tiring', () => {
+    const { c } = setup();
+    const light = pullStamina(c);
+    c.pack.res.stone = 70;
+    expect(pullStamina(c)).toBeGreaterThan(light);
+  });
+
+  it('old armour items migrate to the new pieces', () => {
+    const { s, c } = warrior();
+    const old = JSON.parse(JSON.stringify(s));
+    old.version = 9;
+    old.chars[0].pack.items.push({ uid: 7001, def: 'platemail', dur: 80, maxDur: 80, quality: 'normal' });
+    old.chars[0].equip = { ...old.chars[0].equip, body: 7001 };
+    delete old.chars[0].equip.chest;
+    const back = importSave(btoa(JSON.stringify(old)));
+    const ch = back.chars.find((x) => x.id === c.id)!;
+    expect(ch.pack.items.find((i) => i.uid === 7001)!.def).toBe('plateChest');
+    expect(ch.equip.chest).toBe(7001);
   });
 });

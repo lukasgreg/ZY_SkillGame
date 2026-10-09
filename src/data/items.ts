@@ -11,8 +11,12 @@ export const ITEM_IDS = [
   'club', 'quarterstaff', 'shortbow', 'longbow', 'compositeBow',
   // shields
   'buckler', 'heaterShield', 'woodenShield',
-  // armor
-  'chainCoif', 'ringmailTunic', 'plateHelm', 'platemail',
+  // armour: five families × six pieces (UO / Andaria)
+  'leatherHead', 'leatherNeck', 'leatherChest', 'leatherArms', 'leatherHands', 'leatherLegs',
+  'studdedHead', 'studdedNeck', 'studdedChest', 'studdedArms', 'studdedHands', 'studdedLegs',
+  'ringHead', 'ringNeck', 'ringChest', 'ringArms', 'ringHands', 'ringLegs',
+  'chainHead', 'chainNeck', 'chainChest', 'chainArms', 'chainHands', 'chainLegs',
+  'plateHead', 'plateNeck', 'plateChest', 'plateArms', 'plateHands', 'plateLegs',
   // from plans
   'runicHammer', 'reinforcedPack', 'deepBlade', 'ancientBow',
 ] as const;
@@ -55,7 +59,66 @@ const guard = (id: ItemDefId, kind: 'shield' | 'armor', armor: number, weight: n
   id, kind, armor, repairSkill, metal: repairSkill === 'blacksmithing', weight, maxDur, speed: 1, price, gender,
 });
 
-export const ITEMS: Record<ItemDefId, ItemDef> = {
+export const ARMOUR_SLOTS = ['head', 'neck', 'chest', 'arms', 'hands', 'legs'] as const;
+export type ArmourSlot = (typeof ARMOUR_SLOTS)[number];
+export type Slot = 'weapon' | 'shield' | ArmourSlot;
+export const SLOTS: Slot[] = ['weapon', 'shield', ...ARMOUR_SLOTS];
+
+/* ---------------- armour families (docs/PLAN_V2.md, phase C) ---------------- */
+
+export type ArmourFamily = 'leather' | 'studded' | 'ring' | 'chain' | 'plate';
+
+export interface ArmourFamilyDef {
+  /** Defence of the full six-piece set. */
+  setArmor: number;
+  setWeight: number;
+  minStr: number;
+  /** Made from bars (metal variants) or from hides. */
+  metal: boolean;
+  setPrice: number;
+}
+
+export const ARMOUR_FAMILIES: Record<ArmourFamily, ArmourFamilyDef> = {
+  leather: { setArmor: 12, setWeight: 9, minStr: 15, metal: false, setPrice: 90 },
+  studded: { setArmor: 16, setWeight: 18, minStr: 25, metal: false, setPrice: 150 },
+  ring: { setArmor: 22, setWeight: 38, minStr: 28, metal: true, setPrice: 220 },
+  chain: { setArmor: 28, setWeight: 45, minStr: 35, metal: true, setPrice: 300 },
+  plate: { setArmor: 40, setWeight: 70, minStr: 50, metal: true, setPrice: 480 },
+};
+
+/** Each piece's share of the set's defence, weight and materials. */
+export const PIECE_SHARE: Record<ArmourSlot, number> = { chest: 0.35, legs: 0.22, arms: 0.14, head: 0.14, neck: 0.08, hands: 0.07 };
+
+/** Czech grammar for adjective agreement: plural nouns (rukávce, rukavice, kalhoty) take the "-é" form, like neuter. */
+const PIECE_GENDER: Record<ArmourFamily, Record<ArmourSlot, Gender>> = {
+  leather: { head: 'f', neck: 'm', chest: 'f', arms: 'n', hands: 'n', legs: 'n' },
+  studded: { head: 'f', neck: 'm', chest: 'f', arms: 'n', hands: 'n', legs: 'n' },
+  ring: { head: 'f', neck: 'm', chest: 'f', arms: 'n', hands: 'n', legs: 'n' },
+  chain: { head: 'f', neck: 'm', chest: 'f', arms: 'n', hands: 'n', legs: 'n' },
+  plate: { head: 'f', neck: 'm', chest: 'm', arms: 'n', hands: 'n', legs: 'n' },
+};
+
+export const ARMOUR_INFO: Partial<Record<ItemDefId, { family: ArmourFamily; piece: ArmourSlot }>> = {};
+
+function armourDefs(): Record<string, ItemDef> {
+  const out: Record<string, ItemDef> = {};
+  for (const [family, f] of Object.entries(ARMOUR_FAMILIES) as [ArmourFamily, ArmourFamilyDef][]) {
+    for (const piece of ARMOUR_SLOTS) {
+      const id = `${family}${piece[0].toUpperCase()}${piece.slice(1)}` as ItemDefId;
+      const share = PIECE_SHARE[piece];
+      ARMOUR_INFO[id] = { family, piece };
+      out[id] = {
+        id, kind: 'armor', armor: Math.round(f.setArmor * share * 10) / 10, metal: f.metal,
+        repairSkill: f.metal ? 'blacksmithing' : 'tailoring',
+        weight: Math.round(f.setWeight * share * 10) / 10, maxDur: f.metal ? 60 : 45, speed: 1,
+        price: Math.round(f.setPrice * share), gender: PIECE_GENDER[family][piece],
+      };
+    }
+  }
+  return out;
+}
+
+export const ITEMS = {
   pickaxe: tool('pickaxe', 'mining', 4, 50, 1, 30, 'm'),
   shovel: tool('shovel', 'mining', 3, 35, 1.15, 18, 'f'),
   hatchet: tool('hatchet', 'lumberjacking', 4, 50, 1, 26, 'f'),
@@ -82,17 +145,14 @@ export const ITEMS: Record<ItemDefId, ItemDef> = {
   buckler: guard('buckler', 'shield', 3, 5, 50, 40, 'm'),
   heaterShield: guard('heaterShield', 'shield', 7, 10, 70, 96, 'm'),
   woodenShield: guard('woodenShield', 'shield', 4, 6, 50, 34, 'm', 'carpentry'),
-  chainCoif: guard('chainCoif', 'armor', 3, 3, 45, 48, 'f'),
-  ringmailTunic: guard('ringmailTunic', 'armor', 6, 12, 60, 110, 'f'),
-  plateHelm: guard('plateHelm', 'armor', 5, 5, 60, 80, 'f'),
-  platemail: guard('platemail', 'armor', 12, 25, 80, 200, 'f'),
+  ...(armourDefs() as Record<string, ItemDef>),
 
   /** Each use while crafting makes a runic item; durability counts charges. */
   runicHammer: { id: 'runicHammer', kind: 'tool', repairSkill: 'blacksmithing', metal: false, weight: 3, maxDur: 5, speed: 1, price: 400, gender: 'n' },
   reinforcedPack: { id: 'reinforcedPack', kind: 'bag', repairSkill: 'tinkering', metal: false, weight: 3, maxDur: 200, speed: 1, price: 260, bagBonus: 50, gender: 'm' },
   deepBlade: { ...weapon('deepBlade', 'edged', [16, 26], 1.0, 6, 120, 900, 'f'), metal: false },
   ancientBow: weapon('ancientBow', 'archery', [18, 28], 1.1, 4, 110, 800, 'm', 'bowcraft'),
-};
+} as Record<ItemDefId, ItemDef>;
 
 export const METAL_IDS = ['iron', 'copper', 'steel', 'silver', 'gold', 'darkIron', 'mithril', 'blackrock'] as const;
 export type MetalId = (typeof METAL_IDS)[number];
@@ -140,15 +200,18 @@ export function itemWeight(def: ItemDefId, mat?: MetalId): number {
   return ITEMS[def].weight * (mat ? METALS[mat].weightMult ?? 1 : 1);
 }
 
-export type Slot = 'weapon' | 'shield' | 'head' | 'body';
-
 /** Where an item is worn, if it can be. */
 export function slotOf(def: ItemDefId): Slot | null {
   const d = ITEMS[def];
   if (d.kind === 'weapon') return 'weapon';
   if (d.kind === 'shield') return 'shield';
-  if (d.kind === 'armor') return def === 'chainCoif' || def === 'plateHelm' ? 'head' : 'body';
-  return null;
+  return ARMOUR_INFO[def]?.piece ?? null;
+}
+
+/** Strength needed to wear an item (armour families only). */
+export function minStr(def: ItemDefId): number {
+  const a = ARMOUR_INFO[def];
+  return a ? ARMOUR_FAMILIES[a.family].minStr : 0;
 }
 
 /** Durability state words (design 4b). */

@@ -1,4 +1,4 @@
-import type { ItemDefId } from './items';
+import { ARMOUR_FAMILIES, ARMOUR_INFO, PIECE_SHARE, type ArmourFamily, type ArmourSlot, type ItemDefId } from './items';
 import type { ResourceId } from './resources';
 import type { SkillId } from './skills';
 
@@ -37,13 +37,10 @@ export const RECIPES: Recipe[] = [
   smith('buckler', 15, 5),
   smith('shortsword', 20, 5),
   smith('mace', 25, 6),
-  smith('chainCoif', 30, 6),
   smith('longsword', 35, 8),
-  smith('ringmailTunic', 40, 14),
   smith('heaterShield', 45, 12),
   smith('warHammer', 50, 12, { log: 1 }),
-  smith('plateHelm', 55, 10),
-  smith('platemail', 65, 25),
+  ...armourRecipes(),
 
   tinker('tinkerTools', 0, { ironBar: 2 }),
   tinker('shovel', 5, { ironBar: 2, log: 1 }),
@@ -75,6 +72,26 @@ export const RECIPES: Recipe[] = [
   cook('herbalStew', 45, { pike: 1, herb: 1 }),
   cook('smokedSturgeon', 65, { sturgeon: 1, coal: 1 }),
 ];
+
+/** Armour pieces: blacksmiths make ring, chain and plate from bars; tailors make leather and studded from hides. */
+function armourRecipes(): Recipe[] {
+  const familyMin: Record<ArmourFamily, number> = { leather: 0, studded: 25, ring: 25, chain: 35, plate: 55 };
+  const pieceOffset: Record<ArmourSlot, number> = { neck: 0, hands: 0, head: 2, arms: 4, legs: 6, chest: 8 };
+  const setBars: Partial<Record<ArmourFamily, number>> = { ring: 40, chain: 50, plate: 70 };
+  const out: Recipe[] = [];
+  for (const [def, info] of Object.entries(ARMOUR_INFO) as [ItemDefId, { family: ArmourFamily; piece: ArmourSlot }][]) {
+    const share = PIECE_SHARE[info.piece];
+    const min = familyMin[info.family] + pieceOffset[info.piece];
+    if (ARMOUR_FAMILIES[info.family].metal) {
+      out.push(smith(def, min, Math.max(2, Math.round(setBars[info.family]! * share))));
+    } else {
+      const inputs: Recipe['inputs'] = { hide: Math.max(1, Math.round(20 * share)) };
+      if (info.family === 'studded') inputs.ironBar = Math.max(1, Math.round(8 * share));
+      out.push({ id: def, skill: 'tailoring', min, max: min + 30, tool: 'sewingKit', inputs, out: { item: def } });
+    }
+  }
+  return out;
+}
 
 export function recipeFor(def: ItemDefId): Recipe | undefined {
   return RECIPES.find((r) => 'item' in r.out && r.out.item === def);

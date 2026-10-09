@@ -17,7 +17,7 @@ export const RESOURCE_IDS = [
   // rare: contract rewards and finds
   'etherealOre', 'ancientWood', 'dragonScale', 'planFragment',
   // adventuring
-  'bandage', 'repairKit', 'wayHome',
+  'bandage', 'repairKit', 'wayHome', 'hide',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -97,6 +97,7 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   bandage: r('bandage', 0.1, 2, 0),
   repairKit: r('repairKit', 1, 15, 0.3),
   wayHome: r('wayHome', 0.1, 120, 2),
+  hide: r('hide', 1, 3, 0.2),
 };
 
 /**

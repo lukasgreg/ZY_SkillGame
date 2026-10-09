@@ -398,3 +398,20 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .meter-xp > span { background: var(--gold); }
 .hud-id .lvl { font-size: 14px; color: var(--muted-ground); letter-spacing: 0.08em; margin-left: 6px; }
 .metal-fx { margin: 6px 0 0; font-style: italic; }
+
+/* ---------- paperdoll ---------- */
+.doll-wrap { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .doll-wrap { grid-template-columns: 1fr; justify-items: center; } }
+.doll { width: 100%; max-width: 220px; height: auto; background: #f6eed8; border: 1px solid var(--brass); }
+.doll .part { cursor: pointer; }
+.doll .part > :not(.face) { stroke: var(--ink); stroke-width: 1.5; }
+.doll .part.sel > :not(.face):not([fill="transparent"]) { stroke: var(--rust); stroke-width: 3; }
+.doll .part:hover > :not(.face) { filter: brightness(1.08); }
+.doll .face { fill: none; stroke: var(--ink); stroke-width: 1.4; }
+.doll .ghost, .doll .ghost-shape { fill: none; stroke: #b8a179 !important; stroke-dasharray: 4 3; }
+.doll-side { min-width: 0; width: 100%; }
+.doll-slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.slot-btn { width: 100%; display: grid; grid-template-columns: 4.5em minmax(0, 1fr); gap: 6px; text-align: left; background: none; border: 1px solid transparent; padding: 2px 4px; color: var(--ink); }
+.slot-btn.on { border-color: var(--rust); background: #f3e8cc; }
+.doll-detail { border-top: 1px dotted var(--brass); margin-top: 8px; }
+.doll .part > .hit { stroke: none !important; }

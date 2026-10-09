@@ -1,6 +1,6 @@
 import { MONSTERS, TAMEABLE, type Family, type MonsterId } from '../data/dungeons';
 import { canControl, healPet, petMaxHp, petSkillCap, tryTame } from './pets';
-import { ITEMS, METALS, slotOf, type Slot } from '../data/items';
+import { ARMOUR_SLOTS, ITEMS, METALS, itemWeight, minStr, slotOf, type Slot } from '../data/items';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
 import { addRes, eat } from './character';
@@ -20,11 +20,13 @@ export function isEquipped(c: Character, uid: number): boolean {
   return Object.values(c.equip).includes(uid);
 }
 
-/** Wears an item in its slot (replacing what was there). */
+const DEFENCE_SLOTS: Slot[] = ['shield', ...ARMOUR_SLOTS];
+
+/** Wears an item in its slot (replacing what was there). Heavy armour needs the strength for it. */
 export function equip(c: Character, uid: number): boolean {
   const it = c.pack.items.find((i) => i.uid === uid);
   const slot = it && slotOf(it.def);
-  if (!slot) return false;
+  if (!slot || c.stats.str < minStr(it.def)) return false;
   c.equip[slot] = uid;
   return true;
 }
@@ -49,7 +51,7 @@ function qualityMult(it: ItemInstance): number {
 
 export function armorValue(c: Character): number {
   let a = 0;
-  for (const slot of ['shield', 'head', 'body'] as Slot[]) {
+  for (const slot of DEFENCE_SLOTS) {
     const it = equipped(c, slot);
     if (!it) continue;
     const d = ITEMS[it.def];
@@ -63,7 +65,7 @@ export function wardMult(c: Character, fam: Family): number {
   const total = armorValue(c);
   if (!total) return 1;
   let cut = 0;
-  for (const slot of ['shield', 'head', 'body'] as Slot[]) {
+  for (const slot of DEFENCE_SLOTS) {
     const it = equipped(c, slot);
     const w = it?.mat ? METALS[it.mat].wards?.[fam] : undefined;
     if (!it || w === undefined) continue;
@@ -71,6 +73,26 @@ export function wardMult(c: Character, fam: Family): number {
     cut += share * (1 - w);
   }
   return 1 - cut;
+}
+
+/** Armour soaks this share of its defence value from each blow. */
+export const ARMOUR_SCALE = 0.5;
+
+/** Weight of everything worn (armour and shield). */
+export function wornWeight(c: Character): number {
+  return DEFENCE_SLOTS.reduce((n, sl) => {
+    const it = equipped(c, sl);
+    return n + (it ? itemWeight(it.def, it.mat) : 0);
+  }, 0);
+}
+
+/** Stamina each combat round costs in your armour (plate about 3, leather 0). */
+export function roundStamina(c: Character): number {
+  return Math.round(wornWeight(c) / 25);
+}
+
+export function exhausted(c: Character): boolean {
+  return c.stamina < 1;
 }
 
 export function usesArrows(c: Character): boolean {
@@ -173,7 +195,8 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
     }
   }
   const atk = c.skills[w.skill] / 10;
-  const p = clamp(hitChance(atk, mon.skill, c.skills.tactics / 10) + (opts.hitBonus ?? 0), 0.05, 0.97);
+  const tired = exhausted(c);
+  const p = clamp(hitChance(atk, mon.skill, c.skills.tactics / 10) + (opts.hitBonus ?? 0) - (tired ? 0.15 : 0), 0.05, 0.97);
   const hit = rng() < p;
   const now = new Date();
   const g1 = trySkillGain(c, w.skill, p, hit, rng, gainOpts(mon.skill, now));
@@ -192,7 +215,7 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const q = it ? qualityMult(it) : 1;
   const bonus = 1 + c.skills.tactics / 2000 + c.skills.anatomy / 2000 + c.stats.str / 300;
   const crit = rng() < c.skills.anatomy / 2000;
-  let dmg = randInt(rng, w.dmg[0], w.dmg[1]) * metal * q * bonus * STANCE_DEALT[c.stance] * (opts.dmgMult ?? 1) * (crit ? 1.5 : 1);
+  let dmg = randInt(rng, w.dmg[0], w.dmg[1]) * metal * q * bonus * STANCE_DEALT[c.stance] * (opts.dmgMult ?? 1) * (crit ? 1.5 : 1) * (tired ? 0.75 : 1);
   dmg = Math.max(1, Math.round(dmg - mon.armor * (0.5 + rng() * 0.5)));
   target.hp -= dmg;
   say(run, crit ? 'fight.crit' : 'fight.hit', { foe: foeName(target), dmg }, 'good');
@@ -308,12 +331,12 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
     }
   }
   const armor = armorValue(c);
-  const reduce = c.stance === 'defensive' ? armor * 0.75 : armor * (0.4 + rng() * 0.6);
+  const reduce = (c.stance === 'defensive' ? armor * 0.75 : armor * (0.4 + rng() * 0.6)) * ARMOUR_SCALE;
   const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * STANCE_TAKEN[c.stance] * wardMult(c, mon.family) - reduce));
   c.hp -= dmg;
   say(run, 'fight.hurt', { foe: foeName(f), dmg }, 'bad');
   if (chance(rng, 0.25)) {
-    const worn = (['head', 'body'] as Slot[]).map((sl) => [sl, equipped(c, sl)] as const).filter(([, it]) => it);
+    const worn = ARMOUR_SLOTS.map((sl) => [sl, equipped(c, sl)] as const).filter(([, it]) => it);
     if (worn.length) {
       const [sl, it] = worn[Math.floor(rng() * worn.length)];
       if (wear(c, it!)) {
@@ -388,6 +411,12 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
   }
   if (cb.cowed > 0) cb.cowed -= 1;
   cb.guard = false;
+  const cost = roundStamina(c);
+  if (cost) {
+    const was = c.stamina;
+    c.stamina = Math.max(0, c.stamina - cost);
+    if (was >= 1 && c.stamina < 1) say(run, 'fight.exhausted', undefined, 'bad');
+  }
   cb.round += 1;
   return cb.foes.every((f) => f.hp <= 0) ? 'won' : 'continue';
 }

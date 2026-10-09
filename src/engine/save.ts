@@ -31,7 +31,36 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
   }),
   7: (s) => ({ ...s, version: 8, stats: newStats(), achievements: {} }),
   8: (s) => ({ ...s, version: 9, chars: s.chars.map((c: any) => ({ ...c, level: 1, xp: 0, statBase: { ...c.stats } })) }),
+  9: (s) => migrateArmour(s),
 };
+
+/** v9 → v10: the four old armour items become pieces of the new families; the body slot becomes chest. */
+const OLD_ARMOUR: Record<string, string> = { chainCoif: 'chainHead', ringmailTunic: 'ringChest', plateHelm: 'plateHead', platemail: 'plateChest' };
+
+function migrateArmour(s: any): any {
+  const fixItems = (items: any[]) => items.map((i) => (OLD_ARMOUR[i.def] ? { ...i, def: OLD_ARMOUR[i.def] } : i));
+  const fixInv = (inv: any) => (inv ? { ...inv, items: fixItems(inv.items ?? []) } : inv);
+  const fixWant = (w: any) => (w && OLD_ARMOUR[w.wants] ? { ...w, wants: OLD_ARMOUR[w.wants] } : w);
+  const fixEquip = (e: any) => {
+    if (!e) return e;
+    const { body, ...rest } = e;
+    return body === undefined ? rest : { ...rest, chest: body };
+  };
+  return {
+    ...s,
+    version: 10,
+    bank: fixInv(s.bank),
+    wanderers: (s.wanderers ?? []).map(fixWant),
+    contracts: (s.contracts ?? []).map(fixWant),
+    contractOffers: (s.contractOffers ?? []).map(fixWant),
+    chars: s.chars.map((c: any) => ({
+      ...c,
+      pack: fixInv(c.pack),
+      equip: fixEquip(c.equip),
+      corpse: c.corpse ? { ...c.corpse, pack: fixInv(c.corpse.pack), equip: fixEquip(c.corpse.equip) } : null,
+    })),
+  };
+}
 
 export function deserialize(json: string): GameState {
   let s = JSON.parse(json);

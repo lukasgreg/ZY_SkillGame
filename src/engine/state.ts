@@ -5,7 +5,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon';

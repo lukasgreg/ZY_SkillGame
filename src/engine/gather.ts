@@ -21,13 +21,19 @@ export function gatherTool(c: Character, skill: SkillId): ItemInstance | null {
   return fits.find((i) => i.uid === c.tool) ?? fits.sort((a, b) => a.dur - b.dur)[0] ?? null;
 }
 
+/** A heavy pack tires you faster: over half full, each pull costs up to three times the stamina. */
+export function pullStamina(c: Character): number {
+  const load = packWeight(c.pack) / maxWeight(c);
+  return Math.round(STAMINA_PER_PULL * (1 + 2 * Math.max(0, load - 0.5)) * 10) / 10;
+}
+
 /** Why gathering can't start right now, or null if it can. */
 export type GatherBlock = 'notThere' | 'noTool' | 'tired' | 'overweight' | 'noNode' | 'nodeEmpty';
 
 export function canGather(c: Character): GatherBlock | null {
   if (!isGatherLoc(c.location)) return 'notThere';
   if (!gatherTool(c, GATHER_SKILL[c.location])) return 'noTool';
-  if (c.stamina < STAMINA_PER_PULL) return 'tired';
+  if (c.stamina < pullStamina(c)) return 'tired';
   if (packWeight(c.pack) + 1 > maxWeight(c)) return 'overweight';
   if (!c.node) return 'noNode';
   if (c.node.left <= 0) return 'nodeEmpty';
@@ -115,7 +121,7 @@ export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult
   }
   const fragment = ok && rng() < FRAGMENT_CHANCE;
   if (fragment) addRes(c.pack, 'planFragment', 1);
-  c.stamina = Math.max(0, c.stamina - STAMINA_PER_PULL);
+  c.stamina = Math.max(0, c.stamina - pullStamina(c));
 
   const gain = trySkillGain(c, skillId, p, ok, rng, {
     rarity: RESOURCES[node.res].rarity,

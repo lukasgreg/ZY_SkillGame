@@ -40,8 +40,8 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
   const pick = makeItem(s, 'pickaxe');
   const gear: Record<ProfessionId, ItemDefId[]> = {
     craftsman: ['hatchet', 'smithHammer', 'tinkerTools', 'club'],
-    warrior: ['shortsword', 'buckler', 'chainCoif'],
-    ranger: ['shortbow', 'fishingRod'],
+    warrior: ['shortsword', 'buckler', 'leatherChest', 'leatherLegs', 'leatherHead'],
+    ranger: ['shortbow', 'fishingRod', 'leatherChest', 'leatherLegs'],
   };
   const items = [pick, ...gear[prof].map((d) => makeItem(s, d))];
   const equip: Character['equip'] = {};

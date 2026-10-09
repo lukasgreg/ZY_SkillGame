@@ -41,13 +41,13 @@ const m = (id: MonsterId, hp: number, skill: number, dmg: [number, number], armo
 });
 
 export const MONSTERS: Record<MonsterId, MonsterDef> = {
-  rat: m('rat', 12, 15, [2, 5], 0, 12, [0, 3]),
+  rat: m('rat', 12, 15, [2, 5], 0, 12, [0, 3], [['hide', 0.8, 1, 3]]),
   smuggler: m('smuggler', 25, 25, [3, 8], 1, 8, [3, 10], [['bandage', 0.2, 1, 3]]),
   thug: m('thug', 45, 35, [5, 10], 2, 6, [10, 25], [['planFragment', 0.08, 1, 1]]),
   smugglerChief: m('smugglerChief', 90, 42, [6, 12], 3, 8, [60, 120], [['planFragment', 0.6, 1, 2], ['wayHome', 0.3, 1, 1]]),
 
   iceBat: m('iceBat', 18, 28, [3, 6], 0, 16, [2, 6]),
-  frostWolf: m('frostWolf', 38, 38, [5, 10], 1, 12, [4, 12]),
+  frostWolf: m('frostWolf', 38, 38, [5, 10], 1, 12, [4, 12], [['hide', 0.8, 1, 3]]),
   caveTroll: m('caveTroll', 80, 45, [8, 14], 3, 3, [20, 45], [['planFragment', 0.12, 1, 1]]),
   frostfang: m('frostfang', 150, 55, [10, 18], 4, 10, [120, 220], [['dragonScale', 0.5, 1, 2], ['planFragment', 0.6, 1, 2], ['wayHome', 0.3, 1, 1]]),
 
@@ -66,10 +66,10 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
   gnarlShaman: m('gnarlShaman', 125, 88, [16, 26], 4, 11, [60, 120], [['etherealOre', 0.4, 1, 3], ['planFragment', 0.25, 1, 1]]),
   gnarlWarlord: m('gnarlWarlord', 400, 96, [20, 32], 8, 10, [500, 900], [['dragonScale', 0.8, 2, 4], ['planFragment', 1, 2, 4], ['wayHome', 0.6, 1, 2]]),
 
-  boar: m('boar', 30, 30, [4, 9], 1, 9, [0, 2]),
-  wolf: m('wolf', 36, 38, [5, 10], 1, 13, [0, 2]),
-  bear: m('bear', 70, 50, [8, 15], 2, 7, [0, 4]),
-  direwolf: m('direwolf', 90, 64, [11, 18], 2, 14, [5, 15], [['planFragment', 0.1, 1, 1]]),
+  boar: m('boar', 30, 30, [4, 9], 1, 9, [0, 2], [['hide', 0.8, 1, 3]]),
+  wolf: m('wolf', 36, 38, [5, 10], 1, 13, [0, 2], [['hide', 0.8, 1, 3]]),
+  bear: m('bear', 70, 50, [8, 15], 2, 7, [0, 4], [['hide', 0.8, 1, 3]]),
+  direwolf: m('direwolf', 90, 64, [11, 18], 2, 14, [5, 15], [['hide', 0.8, 1, 3], ['planFragment', 0.1, 1, 1]]),
   drake: m('drake', 220, 85, [16, 26], 5, 11, [80, 160], [['dragonScale', 0.9, 2, 4], ['planFragment', 0.6, 1, 2]]),
 };
 
