@@ -1,4 +1,5 @@
 import { DUNGEONS, DUNGEON_IDS, MONSTERS } from '../data/dungeons';
+import { isPotion } from '../data/potions';
 import { petMaxHp, vetHeal } from '../engine/pets';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import { ABILITY_COST, abilityFor, abilityOk, allies, armorValue, bandageHeal, fleeChance, hitChance, usesArrows, weaponInfo, type Ability } from '../engine/combat';
@@ -164,6 +165,7 @@ function Fight({ c, run }: { c: Character; run: Run }) {
   const target = cb.foes.find((f) => f.hp > 0);
   const p = target ? hitChance(c.skills[w.skill] / 10, MONSTERS[target.kind].skill, c.skills.tactics / 10) : 0;
   const foods = (Object.keys(c.pack.res) as ResourceId[]).filter((id) => RESOURCES[id].food);
+  const potions = (Object.keys(c.pack.res) as ResourceId[]).filter((id) => isPotion(id) && (c.pack.res[id] ?? 0) > 0);
   return (
     <Card title={t('fight.title', { n: cb.round })}>
       <ul class="foes">
@@ -173,6 +175,7 @@ function Fight({ c, run }: { c: Character; run: Run }) {
               {f.affix && <b class="affix">{t(`affix.${f.affix}`)} </b>}
               {t(`mon.${f.kind}`)} <span class="muted small">({t(`family.${MONSTERS[f.kind].family}`)})</span>
               {f.stunned > 0 && <span class="muted small"> · {t('fight.stunnedTag')}</span>}
+              {(f.poisoned ?? 0) > 0 && <span class="good small"> · {t('fight.poisonedTag')}</span>}
             </span>
             <Meter value={f.hp} max={f.max ?? MONSTERS[f.kind].hp} kind="hp" />
             <span class="small">
@@ -219,6 +222,11 @@ function Fight({ c, run }: { c: Character; run: Run }) {
         <button class="btn" disabled={busy || !(c.pack.res.bandage ?? 0) || cb.bandaging} onClick={() => fightAction({ type: 'bandage' })}>
           {t('fight.bandage', { n: c.pack.res.bandage ?? 0, h: bandageHeal(c) })}
         </button>
+        {potions.map((id) => (
+          <button key={id} class="btn potion" disabled={busy} onClick={() => fightAction({ type: 'potion', id })}>
+            {t(`res.${id}`)} ({c.pack.res[id]})
+          </button>
+        ))}
         {foods.slice(0, 2).map((id) => (
           <button key={id} class="btn" disabled={busy} onClick={() => fightAction({ type: 'eat', res: id })}>
             {t('pack.eat')}: {t(`res.${id}`)} ({c.pack.res[id]})
@@ -241,6 +249,8 @@ function Fight({ c, run }: { c: Character; run: Run }) {
           </button>
         )}
       </div>
+      {c.poison && <p class="small warn">{t('fight.youArePoisoned', { n: c.poison.left })}</p>}
+      {c.coat > 0 && <p class="small good">{t('fight.coated', { n: c.coat })}</p>}
       {usesArrows(c) && (
         <p class={`small ${(c.pack.res.arrow ?? 0) ? 'muted' : 'warn'}`}>
           {(c.pack.res.arrow ?? 0) ? t('fight.arrows', { n: c.pack.res.arrow ?? 0 }) : t('fight.noArrowsFists')}

@@ -20,7 +20,7 @@ export const PROFESSIONS: Record<ProfessionId, ProfessionDef> = {
     id: 'craftsman',
     caps: {
       mining: 100, lumberjacking: 100, blacksmithing: 100, carpentry: 100, tinkering: 100, bowcraft: 100, tailoring: 100,
-      cooking: 100, weaponLore: 100, farming: 100,
+      cooking: 100, weaponLore: 100, farming: 100, alchemy: 100,
       fishing: 60, herding: 70, camping: 50, archery: 40, tactics: 40, blunt: 50, edged: 20, piercing: 30,
       healing: 30, anatomy: 20, shieldBlock: 20, taming: 30, animalLore: 30, tracking: 30, animalHealing: 0,
     },
@@ -37,7 +37,7 @@ export const PROFESSIONS: Record<ProfessionId, ProfessionDef> = {
     id: 'warrior',
     caps: {
       edged: 100, blunt: 100, shieldBlock: 100, tactics: 100, weaponLore: 100, cooking: 100,
-      piercing: 80, archery: 80, anatomy: 80, blacksmithing: 50, fishing: 50, camping: 50, healing: 40,
+      piercing: 80, archery: 80, anatomy: 80, blacksmithing: 50, fishing: 50, camping: 50, healing: 40, alchemy: 40,
       mining: 30, lumberjacking: 30, carpentry: 30, tinkering: 30, bowcraft: 30, tailoring: 30, farming: 30,
       taming: 30, animalHealing: 30, animalLore: 30, tracking: 30, herding: 30,
     },
@@ -54,7 +54,7 @@ export const PROFESSIONS: Record<ProfessionId, ProfessionDef> = {
     id: 'ranger',
     caps: {
       archery: 100, taming: 100, animalHealing: 100, tracking: 100, herding: 100, animalLore: 100,
-      cooking: 100, camping: 100, fishing: 100, bowcraft: 90, edged: 80, healing: 70, anatomy: 50,
+      cooking: 100, camping: 100, fishing: 100, bowcraft: 90, edged: 80, healing: 70, anatomy: 50, alchemy: 70,
       tactics: 40, piercing: 40, blunt: 40, shieldBlock: 40, farming: 50,
       mining: 30, lumberjacking: 30, blacksmithing: 30, carpentry: 30, tinkering: 30, tailoring: 30, weaponLore: 30,
     },

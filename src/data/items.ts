@@ -5,7 +5,7 @@ import type { SkillId } from './skills';
 export const ITEM_IDS = [
   // tools
   'pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe',
-  'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit',
+  'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit', 'mortar',
   // weapons
   'dagger', 'shortsword', 'longsword', 'mace', 'warHammer',
   'club', 'quarterstaff', 'shortbow', 'longbow', 'compositeBow',
@@ -130,6 +130,7 @@ export const ITEMS = {
   carvingKnife: tool('carvingKnife', 'bowcraft', 1, 50, 1, 16, 'm'),
   skillet: tool('skillet', 'cooking', 2, 70, 1, 14, 'f'),
   sewingKit: tool('sewingKit', 'tailoring', 1, 50, 1, 12, 'f'),
+  mortar: tool('mortar', 'alchemy', 2, 60, 1, 16, 'm'),
 
   dagger: weapon('dagger', 'piercing', [3, 8], 0.7, 1, 40, 16, 'f'),
   shortsword: weapon('shortsword', 'edged', [6, 12], 0.9, 4, 50, 40, 'm'),

@@ -5,6 +5,7 @@ import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
 import { canControl, feed, healPet, release, resurrect, TAME_MS, track, tryTame, vetTime, wildAreaOpen } from '../engine/pets';
 import { bump } from '../engine/achievements';
+import { usePotion } from '../engine/alchemy';
 import { commission } from '../engine/patterns';
 import { chooseEvent, goBack, openBossChest } from '../engine/dungeon';
 import { camp, enter, fight, here, leave, lootCorpse, move, reengage, scout, useRepairKit, wayHome } from '../engine/dungeon';
@@ -570,4 +571,15 @@ export function vetPet(id: number): void {
   const c = activeChar(getState());
   if (!c || transient.busy) return;
   timed('vet', vetTime(c), () => healMyPet(id));
+}
+
+/* ---------------- potions ---------------- */
+
+export function drinkPotion(id: ResourceId): void {
+  const c = activeChar(getState());
+  if (c?.run?.combat) return fightAction({ type: 'potion', id });
+  withChar((s, c) => {
+    const r = usePotion(c, id, rng);
+    if (r) log(s, `log.potion.${r.kind}`, { res: `@res.${id}`, n: r.kind === 'heal' ? r.n : 0 }, 'good');
+  });
 }

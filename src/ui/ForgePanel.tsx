@@ -12,7 +12,7 @@ import { Card, Durability } from './common';
 import { Pack } from './Pack';
 import { transient } from './store';
 
-const CRAFT_SKILLS: SkillId[] = ['blacksmithing', 'tinkering', 'carpentry', 'bowcraft', 'tailoring', 'cooking'];
+const CRAFT_SKILLS: SkillId[] = ['blacksmithing', 'tinkering', 'carpentry', 'bowcraft', 'tailoring', 'cooking', 'alchemy'];
 const pct = (p: number) => Math.round(p * 100);
 
 /** Progress strip for the action in progress, with a Stop for batches. */

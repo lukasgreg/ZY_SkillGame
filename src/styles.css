@@ -421,3 +421,6 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .map-wrap { scroll-behavior: smooth; }
 .phrase { font-style: italic; color: var(--umber); margin: 6px 0; min-height: 1.4em; }
 .quarry { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.buff { margin-top: 4px; font-family: var(--display); font-size: 11px; letter-spacing: 0.08em; color: var(--ground); background: #9fc58a; padding: 1px 8px; }
+.buff.bad { background: #c97a6a; }
+.btn.potion { border-color: #5f7a4a; }

@@ -1,5 +1,6 @@
 import { MONSTERS, type Family, type MonsterId } from '../data/dungeons';
 import { healPet, petDmgMult, petMaxHp, petSkillCap } from './pets';
+import { COAT_ROUNDS, POISON, armorBuff, poisonTick, usePotion } from './alchemy';
 import { ARMOUR_SLOTS, ITEMS, METALS, itemWeight, minStr, slotOf, type Slot } from '../data/items';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import type { SkillId } from '../data/skills';
@@ -57,7 +58,7 @@ export function armorValue(c: Character): number {
     const d = ITEMS[it.def];
     a += (d.armor ?? 0) * (it.mat ? METALS[it.mat].armorMult : 1) * qualityMult(it);
   }
-  return Math.round(a * 10) / 10;
+  return Math.round((a + armorBuff(c)) * 10) / 10;
 }
 
 /** Damage still taken from a family after armour of warding metals (silver vs undead…), weighted by each piece's share of armour. */
@@ -153,6 +154,7 @@ export type Action =
   | { type: 'eat'; res: ResourceId }
   | { type: 'healPet' }
   | { type: 'wait' }
+  | { type: 'potion'; id: ResourceId }
   | { type: 'flee' };
 
 export type Outcome = 'continue' | 'won' | 'died' | 'fled';
@@ -224,6 +226,11 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   dmg = Math.max(1, Math.round(dmg - foeArmor * (0.5 + rng() * 0.5)));
   target.hp -= dmg;
   say(run, crit ? 'fight.crit' : 'fight.hit', { foe: foeName(target), dmg }, 'good');
+  if (c.coat > 0) {
+    c.coat -= 1;
+    if (!target.poisoned) say(run, 'fight.foePoisoned', { foe: foeName(target) }, 'good');
+    target.poisoned = COAT_ROUNDS;
+  }
   if (md?.slays?.[mon.family]) say(run, 'fight.slay', { metal: `@mat.${md.id}`, foe: foeName(target) }, 'gain');
   if (md?.drain) {
     const heal = Math.max(1, Math.round(dmg * md.drain));
@@ -347,6 +354,10 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
   const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * rage * STANCE_TAKEN[c.stance] * wardMult(c, mon.family) - reduce));
   c.hp -= dmg;
   say(run, 'fight.hurt', { foe: foeName(f), dmg }, 'bad');
+  if (mon.poison && !c.poison && rng() < mon.poison) {
+    c.poison = { dmg: POISON.dmg, left: POISON.ticks };
+    say(run, 'fight.poisoned', { foe: foeName(f) }, 'bad');
+  }
   if (chance(rng, 0.25)) {
     const worn = ARMOUR_SLOTS.map((sl) => [sl, equipped(c, sl)] as const).filter(([, it]) => it);
     if (worn.length) {
@@ -417,6 +428,22 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
     c.hp = 0;
     return 'died';
   }
+  for (const f of cb.foes) {
+    if (!f.poisoned || f.hp <= 0) continue;
+    const d = randInt(rng, 3, 6);
+    f.hp = Math.max(0, f.hp - d);
+    f.poisoned -= 1;
+    say(run, 'fight.foePoisonTick', { foe: foeName(f), dmg: d }, 'good');
+    if (f.hp <= 0) say(run, 'fight.kill', { foe: foeName(f) }, 'gain');
+  }
+  if (c.poison) {
+    const d = poisonTick(c, rng, true);
+    say(run, 'fight.poisonTick', { dmg: d }, 'bad');
+    if (c.hp <= 0) {
+      c.hp = 0;
+      return 'died';
+    }
+  }
   if (cb.bandaging) {
     cb.bandaging = false;
     if (hitThisRound) say(run, 'fight.bandageBroken', undefined, 'bad');
@@ -424,6 +451,10 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
       const heal = bandageHeal(c);
       c.hp = Math.min(maxHp(c), c.hp + heal);
       say(run, 'fight.bandaged', { n: heal }, 'good');
+      if (c.poison && c.skills.healing >= 600) {
+        c.poison = null;
+        say(run, 'fight.cured', undefined, 'good');
+      }
       const g = trySkillGain(c, 'healing', 0.5, true, rng, { mult: isPowerHour() ? 1.5 : 1 });
       if (g) say(run, 'log.gain', { skill: '@skill.healing', amount: `#${g / 10}`, value: `#${c.skills.healing / 10}` }, 'gain');
     }
@@ -477,6 +508,13 @@ function myTurn(c: Character, run: Run, cb: Combat, action: Action, rng: Rng): '
       cb.bandaging = true;
       say(run, 'fight.bandaging', undefined, 'sys');
       return;
+    case 'potion': {
+      const r = usePotion(c, action.id, rng, cb);
+      if (!r) return;
+      say(run, `fight.potion.${r.kind}`, { res: `@res.${action.id}`, n: r.kind === 'heal' ? r.n : r.kind === 'explosion' ? r.hits.reduce((a, b) => a + b, 0) : 0 }, 'good');
+      for (const f of cb.foes) if (f.hp <= 0 && r.kind === 'explosion') say(run, 'fight.kill', { foe: foeName(f) }, 'gain');
+      return;
+    }
     case 'wait':
       cb.guard = true;
       say(run, 'fight.waiting', undefined, 'sys');

@@ -4,7 +4,7 @@ export const SKILL_IDS = [
   // gathering
   'mining', 'lumberjacking', 'fishing', 'farming',
   // crafting
-  'blacksmithing', 'carpentry', 'bowcraft', 'tailoring', 'tinkering', 'cooking',
+  'blacksmithing', 'carpentry', 'bowcraft', 'tailoring', 'tinkering', 'cooking', 'alchemy',
   // combat
   'edged', 'blunt', 'piercing', 'archery', 'tactics', 'anatomy', 'shieldBlock', 'weaponLore', 'healing',
   // wilderness
@@ -35,6 +35,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   tailoring: def('tailoring', 'crafting', { dex: 0.7, int: 0.3 }),
   tinkering: def('tinkering', 'crafting', { dex: 0.5, int: 0.5 }),
   cooking: def('cooking', 'crafting', { int: 0.6, dex: 0.4 }),
+  alchemy: def('alchemy', 'crafting', { int: 0.7, dex: 0.3 }),
   edged: def('edged', 'combat', { str: 0.6, dex: 0.4 }),
   blunt: def('blunt', 'combat', { str: 0.8, dex: 0.2 }),
   piercing: def('piercing', 'combat', { dex: 0.8, str: 0.2 }),

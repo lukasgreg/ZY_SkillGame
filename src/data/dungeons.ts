@@ -25,6 +25,8 @@ export interface MonsterDef {
   /** Initiative bonus. */
   speed: number;
   gold: [number, number];
+  /** Chance per hit to poison you (2–6 a round for 4 rounds). */
+  poison?: number;
   /** Extra drops: [resource, chance, min, max]. */
   drops?: [ResourceId, number, number, number][];
 }
@@ -40,8 +42,10 @@ const FAMILY: Record<MonsterId, Family> = {
   chicken: 'beast', cat: 'beast', goat: 'beast', dog: 'beast', grizzly: 'beast',
 };
 
+const POISONOUS: Partial<Record<MonsterId, number>> = { spider: 0.3, banshee: 0.3, mummy: 0.25, gnarlShaman: 0.3, lichAcolyte: 0.3 };
+
 const m = (id: MonsterId, hp: number, skill: number, dmg: [number, number], armor: number, speed: number, gold: [number, number], drops?: MonsterDef['drops']): MonsterDef => ({
-  id, family: FAMILY[id], hp, skill, dmg, armor, speed, gold, drops,
+  id, family: FAMILY[id], hp, skill, dmg, armor, speed, gold, drops, poison: POISONOUS[id],
 });
 
 export const MONSTERS: Record<MonsterId, MonsterDef> = {
@@ -50,7 +54,7 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
   thug: m('thug', 45, 35, [5, 10], 2, 6, [10, 25], [['planFragment', 0.08, 1, 1]]),
   smugglerChief: m('smugglerChief', 90, 42, [6, 12], 3, 8, [60, 120], [['planFragment', 0.6, 1, 2], ['wayHome', 0.3, 1, 1]]),
 
-  iceBat: m('iceBat', 18, 28, [3, 6], 0, 16, [2, 6]),
+  iceBat: m('iceBat', 18, 28, [3, 6], 0, 16, [2, 6], [['batWing', 0.6, 1, 2]]),
   frostWolf: m('frostWolf', 38, 38, [5, 10], 1, 12, [4, 12], [['hide', 0.8, 1, 3]]),
   caveTroll: m('caveTroll', 80, 45, [8, 14], 3, 3, [20, 45], [['planFragment', 0.12, 1, 1]]),
   frostfang: m('frostfang', 150, 55, [10, 18], 4, 10, [120, 220], [['dragonScale', 0.5, 1, 2], ['planFragment', 0.6, 1, 2], ['wayHome', 0.3, 1, 1]]),
@@ -77,7 +81,7 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
   drake: m('drake', 220, 85, [16, 26], 5, 11, [80, 160], [['dragonScale', 0.9, 2, 4], ['planFragment', 0.6, 1, 2]]),
   spider: m('spider', 28, 32, [4, 9], 1, 14, [2, 8], [['spiderSilk', 0.6, 1, 3]]),
   yeti: m('yeti', 70, 48, [8, 15], 2, 6, [10, 25], [['hide', 0.8, 2, 4]]),
-  banshee: m('banshee', 60, 60, [9, 15], 0, 15, [15, 35], [['ectoplasm', 0.6, 1, 2]]),
+  banshee: m('banshee', 60, 60, [9, 15], 0, 15, [15, 35], [['batWing', 0.3, 1, 2], ['ectoplasm', 0.6, 1, 2]]),
   mummy: m('mummy', 85, 62, [10, 17], 4, 4, [20, 45], [['bone', 0.7, 1, 3], ['flax', 0.5, 2, 5]]),
   gnarlArcher: m('gnarlArcher', 70, 72, [12, 20], 3, 13, [18, 40], [['arrow', 0.8, 5, 15], ['gnarlTusk', 0.5, 1, 2]]),
   stag: m('stag', 40, 36, [5, 11], 1, 15, [0, 2], [['hide', 0.9, 1, 3]]),

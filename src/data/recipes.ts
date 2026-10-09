@@ -27,6 +27,10 @@ const tinker = (id: ItemDefId, min: number, inputs: Recipe['inputs']): Recipe =>
 const wood = (skill: 'carpentry' | 'bowcraft', id: ItemDefId, min: number, inputs: Recipe['inputs']): Recipe => ({
   id, skill, min, max: min + 30, tool: skill === 'carpentry' ? 'saw' : 'carvingKnife', inputs, out: { item: id },
 });
+/** Alchemy (Andaria): a mortar, reagents, two potions per brew. */
+const brew = (res: ResourceId, min: number, inputs: Recipe['inputs']): Recipe => ({
+  id: res, skill: 'alchemy', min, max: min + 35, tool: 'mortar', inputs, out: { res, n: 2 },
+});
 const cook = (res: ResourceId, min: number, inputs: Recipe['inputs'], n = 1): Recipe => ({
   id: res, skill: 'cooking', min, max: min + 30, tool: 'skillet', inputs, out: { res, n },
 });
@@ -65,6 +69,19 @@ export const RECIPES: Recipe[] = [
   { id: 'bandage', skill: 'tailoring', min: 0, max: 35, tool: 'sewingKit', inputs: { flax: 1 }, out: { res: 'bandage', n: 3 } },
   { id: 'repairKit', skill: 'tinkering', min: 30, max: 60, tool: 'tinkerTools', inputs: { ironBar: 2, log: 1, resin: 1 }, out: { res: 'repairKit', n: 1 } },
   tinker('sewingKit', 10, { ironBar: 1, flax: 2 }),
+
+  tinker('mortar', 15, { ironBar: 1, stone: 2 }),
+  brew('potionLesserHeal', 4, { ginseng: 2 }),
+  brew('potionCure', 12, { garlic: 2 }),
+  brew('potionAgility', 12, { bloodmoss: 2 }),
+  brew('potionStrength', 13, { mandrake: 2 }),
+  brew('potionExplosion', 15, { sulfur: 2 }),
+  brew('potionPoison', 16, { nightshade: 2 }),
+  brew('potionWisdom', 19, { batWing: 2 }),
+  brew('potionRefresh', 24, { pearl: 1 }),
+  brew('potionStoneskin', 24, { obsidian: 1, mandrake: 1 }),
+  brew('potionHeal', 35, { ginseng: 3, herb: 1 }),
+  brew('potionGreaterHeal', 65, { ginseng: 3, herb: 2, bloodmoss: 1 }),
 
   cook('bread', 0, { wheat: 2 }),
   cook('cookedFish', 5, { perch: 1 }),

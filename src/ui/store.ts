@@ -11,6 +11,7 @@ import { decay, nextSeed } from '../engine/dungeon';
 import { DUNGEON_IDS } from '../data/dungeons';
 import { checkAchievements } from '../engine/achievements';
 import { restPets, tickPets } from '../engine/pets';
+import { poisonTick, tickBuffs } from '../engine/alchemy';
 import type { ResourceId } from '../data/resources';
 import { detectLang, setLang, type Params } from '../i18n';
 
@@ -133,6 +134,7 @@ export function useGame(): GameState {
 }
 
 let wasPowerHour = isPowerHour();
+let tickCount = 0;
 
 /** One-second heartbeat: regeneration and powerhour notices. */
 export function startClock(): void {
@@ -143,7 +145,14 @@ export function startClock(): void {
     if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
     if (tickContracts(state, c, defaultRng, Date.now())) scheduleSave();
     for (const id of DUNGEON_IDS) if (state.dungeonSeeds[id] === undefined) nextSeed(state, id, defaultRng);
+    tickCount += 1;
     for (const ch of state.chars) {
+      for (const b of tickBuffs(ch)) log(state, 'log.buffEnded', { name: ch.name, buff: `@buff.${b}` }, 'sys');
+      // Poison keeps working out of a fight, every five seconds, but never kills there.
+      if (ch.poison && !ch.run?.combat && tickCount % 5 === 0) {
+        const d = poisonTick(ch, defaultRng, false);
+        if (ch.id === state.active) log(state, 'log.poisonTick', { dmg: d }, 'bad');
+      }
       if (decay(ch)) log(state, 'log.dun.decayed', { name: ch.name }, 'bad');
       if (!ch.pets.length) continue;
       const { ran, bonded } = tickPets(ch);

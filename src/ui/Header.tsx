@@ -49,6 +49,12 @@ export function Header({ c }: { c: Character }) {
       <div class="hud-gold">
         <span>{t('hud.gold')}</span>
         <b>{num(c.gold)}</b>
+        {(c.buffs ?? []).map((b) => (
+          <span key={b.stat} class="buff" title={t('hud.buffTip', { m: Math.max(1, Math.round((b.until - Date.now()) / 60000)) })}>
+            {t(`buff.${b.stat}`)} +{b.amount}
+          </span>
+        ))}
+        {c.poison && <span class="buff bad">{t('hud.poisoned')}</span>}
         {isPowerHour() && (
           <span class="powerhour" title={t('hud.powerhourTip')}>
             {t('hud.powerhour')}

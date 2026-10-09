@@ -20,6 +20,9 @@ export const RESOURCE_IDS = [
   'bandage', 'repairKit', 'wayHome', 'hide',
   // dungeon loot
   'bone', 'ectoplasm', 'gnarlTusk', 'spiderSilk',
+  // alchemy: reagents and potions (Andaria)
+  'ginseng', 'garlic', 'mandrake', 'nightshade', 'batWing',
+  'potionLesserHeal', 'potionHeal', 'potionGreaterHeal', 'potionRefresh', 'potionCure', 'potionAgility', 'potionStrength', 'potionWisdom', 'potionStoneskin', 'potionExplosion', 'potionPoison',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -104,6 +107,22 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   ectoplasm: r('ectoplasm', 0.1, 12, 0.6),
   gnarlTusk: r('gnarlTusk', 0.3, 15, 0.6),
   spiderSilk: r('spiderSilk', 0.05, 5, 0.3),
+  ginseng: r('ginseng', 0.1, 3, 0.2),
+  garlic: r('garlic', 0.1, 3, 0.2),
+  mandrake: r('mandrake', 0.1, 6, 0.5),
+  nightshade: r('nightshade', 0.1, 8, 0.7),
+  batWing: r('batWing', 0.05, 5, 0.4),
+  potionLesserHeal: r('potionLesserHeal', 0.3, 8, 0.2),
+  potionHeal: r('potionHeal', 0.3, 18, 0.5),
+  potionGreaterHeal: r('potionGreaterHeal', 0.3, 40, 1),
+  potionRefresh: r('potionRefresh', 0.3, 30, 0.6),
+  potionCure: r('potionCure', 0.3, 8, 0.2),
+  potionAgility: r('potionAgility', 0.3, 20, 0.5),
+  potionStrength: r('potionStrength', 0.3, 18, 0.5),
+  potionWisdom: r('potionWisdom', 0.3, 18, 0.5),
+  potionStoneskin: r('potionStoneskin', 0.3, 30, 0.7),
+  potionExplosion: r('potionExplosion', 0.3, 20, 0.5),
+  potionPoison: r('potionPoison', 0.3, 22, 0.6),
 };
 
 /**
@@ -168,6 +187,10 @@ export const YIELDS: Partial<Record<ResourceId, Yield>> = {
   flax: y('farming', 20, 55, 4),
   herb: y('farming', 40, 75, 3),
   bloodmoss: y('farming', 70, 105, 2),
+  ginseng: y('farming', 5, 40, 3),
+  garlic: y('farming', 5, 40, 3),
+  mandrake: y('farming', 45, 80, 2),
+  nightshade: y('farming', 65, 100, 2),
 };
 
 export const GATHER_LOCS = ['mine', 'forest', 'coast', 'farm'] as const;
@@ -213,9 +236,9 @@ export const AREAS: Record<GatherLoc, Area[]> = {
     area(4, 80, [['pike', 3], ['sturgeon', 7], ['pearl', 2]]),
   ],
   farm: [
-    area(1, 0, [['wheat', 10], ['feather', 5]]),
+    area(1, 0, [['wheat', 10], ['feather', 5], ['ginseng', 3], ['garlic', 3]]),
     area(2, 20, [['wheat', 4], ['flax', 8], ['feather', 3]]),
-    area(3, 45, [['flax', 3], ['herb', 8], ['wheat', 2]]),
-    area(4, 70, [['herb', 4], ['bloodmoss', 6]]),
+    area(3, 45, [['flax', 3], ['herb', 8], ['wheat', 2], ['mandrake', 4]]),
+    area(4, 70, [['herb', 4], ['bloodmoss', 6], ['nightshade', 4]]),
   ],
 };

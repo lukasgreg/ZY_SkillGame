@@ -5,7 +5,7 @@ import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon' | 'wilds';
@@ -65,6 +65,12 @@ export interface Character {
   /** Where this character last died, until it decays. */
   corpse: Corpse | null;
   pets: Pet[];
+  /** Potion effects running in real time. */
+  buffs: { stat: StatId | 'armor'; amount: number; until: number }[];
+  /** Poison in your blood: damage per tick and ticks left. */
+  poison: { dmg: [number, number]; left: number } | null;
+  /** Hits left on a poison-coated weapon. */
+  coat: number;
   /** Hunting area in the Wilds and the animal you are tracking, if any. */
   wildsArea: 1 | 2 | 3 | 4;
   quarry: MonsterId | null;
@@ -148,6 +154,8 @@ export interface Foe {
   /** Maximum hits (giants have more than their kind). */
   max?: number;
   affix?: Affix;
+  /** Rounds of poison left on this monster (from a coated weapon). */
+  poisoned?: number;
   /** Rounds left stunned. */
   stunned: number;
 }

@@ -12,8 +12,8 @@ import { commissionPattern } from './actions';
 import { Pack } from './Pack';
 import { transient, update } from './store';
 
-const SHOP: ItemDefId[] = ['pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe', 'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit'];
-const GOODS: [ResourceId, number][] = [['log', 5], ['bandage', 10], ['arrow', 50], ['flax', 5], ['hide', 5]];
+const SHOP: ItemDefId[] = ['pickaxe', 'shovel', 'hatchet', 'fishingRod', 'hoe', 'smithHammer', 'tinkerTools', 'saw', 'carvingKnife', 'skillet', 'sewingKit', 'mortar'];
+const GOODS: [ResourceId, number][] = [['log', 5], ['bandage', 10], ['arrow', 50], ['flax', 5], ['hide', 5], ['ginseng', 5], ['garlic', 5]];
 
 export function TownPanel({ s, c }: { s: GameState; c: Character }) {
   const busy = transient.busy;

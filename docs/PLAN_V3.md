@@ -6,7 +6,7 @@ Each phase is playable and deployed on its own. **Status** shows where to pick u
 | Phase | Topic | Status |
 |---|---|---|
 | 0 | Balance pass from simulations | done |
-| H | Alchemy and potions, poison | not started |
+| H | Alchemy and potions, poison | done |
 | I | Paragon enemies | not started |
 | K | Housing with rent (cottage → keep) | not started |
 | L | More achievements | not started |

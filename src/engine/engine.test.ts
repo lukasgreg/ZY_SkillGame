@@ -1027,3 +1027,55 @@ describe('translations', () => {
     expect(missing).toEqual([]);
   });
 });
+
+import { tickBuffs, usePotion } from './alchemy';
+
+describe('alchemy and poison', () => {
+  it('brews potions from reagents with a mortar', () => {
+    const { s, c } = setup();
+    c.pack.items.push({ uid: 8801, def: 'mortar', dur: 60, maxDur: 60, quality: 'normal' });
+    c.skills.alchemy = 400;
+    c.pack.res.ginseng = 2;
+    const r = RECIPES.find((x) => x.id === 'potionLesserHeal')!;
+    expect(canCraft(c, r, null)).toBe(null);
+    craft(s, c, r, null, () => 0.01);
+    expect(c.pack.res.potionLesserHeal).toBe(2);
+  });
+
+  it('potions heal, buff for a while, and the buff wears off back to level stats', () => {
+    const { c } = setup();
+    c.level = 1;
+    c.hp = 10;
+    c.pack.res.potionHeal = 1;
+    c.pack.res.potionStrength = 1;
+    usePotion(c, 'potionHeal', () => 0.5);
+    expect(c.hp).toBe(60);
+    const str = c.stats.str;
+    usePotion(c, 'potionStrength', () => 0.5, null, 1000);
+    expect(c.stats.str).toBe(str + 10);
+    expect(tickBuffs(c, 1000 + 11 * 60_000)).toEqual(['str']);
+    expect(c.stats.str).toBe(str);
+  });
+
+  it('spiders poison you; a cure removes it; explosions hit every foe; a coated weapon poisons', () => {
+    const { s, c } = warrior(40);
+    const rng = mulberry32(40);
+    enter(s, c, 'cellar', rng);
+    c.run!.combat = startCombat(['spider', 'spider', 'spider']);
+    c.skills.edged = 0;
+    c.skills.shieldBlock = 0;
+    for (let i = 0; i < 40 && !c.poison; i++) {
+      c.hp = 999;
+      fight(s, c, { type: 'wait' }, rng);
+    }
+    expect(c.poison).not.toBe(null);
+    c.pack.res.potionCure = 1;
+    usePotion(c, 'potionCure', rng);
+    expect(c.poison).toBe(null);
+    c.pack.res.potionExplosion = 1;
+    const before = c.run!.combat!.foes.map((f) => f.hp);
+    fight(s, c, { type: 'potion', id: 'potionExplosion' }, rng);
+    const after = c.run!.combat?.foes.map((f) => f.hp) ?? [0, 0, 0];
+    expect(after.every((h, i) => h < before[i])).toBe(true);
+  });
+});

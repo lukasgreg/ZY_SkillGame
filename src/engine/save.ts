@@ -40,6 +40,11 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
     version: 13,
     chars: s.chars.map((c: any) => ({ ...c, wildsArea: 1, quarry: null, pets: c.pets.map((p: any) => ({ ...p, level: 1, xp: 0 })) })),
   }),
+  13: (s) => ({
+    ...s,
+    version: 14,
+    chars: s.chars.map((c: any) => ({ ...c, skills: { ...c.skills, alchemy: 0 }, locks: { ...c.locks, alchemy: 'up' }, buffs: [], poison: null, coat: 0 })),
+  }),
 };
 
 /** v9 → v10: the four old armour items become pieces of the new families; the body slot becomes chest. */
