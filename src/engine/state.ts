@@ -1,11 +1,12 @@
 import type { Affix, DungeonId, EventId, MonsterId, Omen } from '../data/dungeons';
 import type { ItemDefId, MetalId, Slot } from '../data/items';
 import type { PlanId } from '../data/plans';
+import type { HouseState } from './housing';
 import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon' | 'wilds';
@@ -71,6 +72,8 @@ export interface Character {
   poison: { dmg: [number, number]; left: number } | null;
   /** Hits left on a poison-coated weapon. */
   coat: number;
+  /** Share of extra experience from the rented house (kept in sync by the clock). */
+  xpBonus?: number;
   /** Hunting area in the Wilds and the animal you are tracking, if any. */
   wildsArea: 1 | 2 | 3 | 4;
   quarry: MonsterId | null;
@@ -278,6 +281,8 @@ export interface GameState {
   contractOffers: Contract[];
   contracts: Contract[];
   stats: Stats;
+  /** The rented house shared by all characters (docs/PLAN_V3.md, phase K). */
+  house: HouseState | null;
   /** Achievement id → when it was earned. */
   achievements: Record<string, number>;
   nextContractAt: number;
@@ -336,6 +341,7 @@ export function newGameState(lang: 'en' | 'cs'): GameState {
     contractOffers: [],
     contracts: [],
     stats: newStats(),
+    house: null,
     achievements: {},
     nextContractAt: 0,
     uidSeq: 1,

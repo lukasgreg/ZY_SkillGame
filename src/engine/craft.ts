@@ -6,6 +6,7 @@ import { addRes } from './character';
 import { clamp, randInt, type Rng } from './rng';
 import { isPowerHour, trySkillGain } from './skills';
 import { craftXp, gainXp } from './levels';
+import { homeCraftBonus } from './housing';
 import { nextUid, type Character, type GameState, type ItemInstance } from './state';
 
 /* ---------------- shared ---------------- */
@@ -117,7 +118,7 @@ export function canRunic(c: Character, r: Recipe): boolean {
 export function craft(s: GameState, c: Character, r: Recipe, metal: MetalId | null, rng: Rng, now = new Date(), runic = false): CraftResult {
   const [min, max] = recipeRange(r, metal);
   const skill = c.skills[r.skill] / 10;
-  const p = craftChance(skill, min, max);
+  const p = Math.min(0.98, craftChance(skill, min, max) + (skill >= min ? homeCraftBonus(s, r.skill) : 0));
   const ok = rng() < p;
   const inputs = recipeInputs(r, metal);
   const lost: [ResourceId, number][] = [];

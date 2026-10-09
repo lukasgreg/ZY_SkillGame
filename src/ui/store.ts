@@ -12,6 +12,7 @@ import { DUNGEON_IDS } from '../data/dungeons';
 import { checkAchievements } from '../engine/achievements';
 import { restPets, tickPets } from '../engine/pets';
 import { poisonTick, tickBuffs } from '../engine/alchemy';
+import { activeHouse, collectRent, harvestGarden } from '../engine/housing';
 import type { ResourceId } from '../data/resources';
 import { detectLang, setLang, type Params } from '../i18n';
 
@@ -40,6 +41,8 @@ reportAway(state);
 
 /** Simulates workers for the time the game was closed and writes a journal summary. */
 function reportAway(s: GameState): void {
+  collectRent(s);
+  for (const [id, n] of Object.entries(harvestGarden(s, defaultRng)) as [ResourceId, number][]) log(s, 'log.house.garden', { n, res: `@res.${id}` }, 'good');
   const { ms, got } = catchUp(s, Date.now(), defaultRng);
   const entries = Object.entries(got) as [ResourceId, number][];
   if (ms < 120_000 || entries.length === 0) return;
@@ -146,6 +149,13 @@ export function startClock(): void {
     if (tickContracts(state, c, defaultRng, Date.now())) scheduleSave();
     for (const id of DUNGEON_IDS) if (state.dungeonSeeds[id] === undefined) nextSeed(state, id, defaultRng);
     tickCount += 1;
+    for (const ev of collectRent(state)) {
+      if (ev !== 'paid') log(state, `log.house.${ev}`, undefined, 'bad');
+    }
+    const home = activeHouse(state);
+    if (tickCount % 60 === 0) {
+      for (const [id, n] of Object.entries(harvestGarden(state, defaultRng)) as [ResourceId, number][]) log(state, 'log.house.garden', { n, res: `@res.${id}` }, 'good');
+    }
     for (const ch of state.chars) {
       for (const b of tickBuffs(ch)) log(state, 'log.buffEnded', { name: ch.name, buff: `@buff.${b}` }, 'sys');
       // Poison keeps working out of a fight, every five seconds, but never kills there.
@@ -158,7 +168,8 @@ export function startClock(): void {
       const { ran, bonded } = tickPets(ch);
       for (const p of ran) log(state, 'log.pet.ran', { pet: `@mon.${p.kind}` }, 'bad');
       for (const p of bonded) log(state, 'log.pet.bondedNow', { pet: `@mon.${p.kind}` }, 'gain');
-      if (!ch.run?.combat) restPets(ch, 1000);
+      if (!ch.run?.combat) restPets(ch, home?.kennel ? 2000 : 1000);
+      ch.xpBonus = home?.xpBonus ?? 0;
     }
     if (state.workers.length) {
       catchUp(state, Date.now(), defaultRng);

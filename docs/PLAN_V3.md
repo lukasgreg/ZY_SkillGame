@@ -8,7 +8,7 @@ Each phase is playable and deployed on its own. **Status** shows where to pick u
 | 0 | Balance pass from simulations | done |
 | H | Alchemy and potions, poison | done |
 | I | Paragon enemies | done |
-| K | Housing with rent (cottage → keep) | not started |
+| K | Housing with rent (cottage → keep) | done |
 | L | More achievements | not started |
 | M | Quality of life: auto-repeat, beginner's guide, keyboard shortcuts | not started |
 

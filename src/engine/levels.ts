@@ -39,7 +39,7 @@ export function statsAt(c: Character, level: number): Record<StatId, number> {
 /** Adds experience and applies any level-ups (stats rise, hits and stamina refill). Returns levels gained. */
 export function gainXp(c: Character, amount: number): number {
   if (amount < 0 || c.level >= MAX_LEVEL) return 0;
-  c.xp += amount;
+  c.xp += amount * (1 + (c.xpBonus ?? 0));
   let gained = 0;
   while (c.level < MAX_LEVEL && c.xp >= xpToNext(c.level)) {
     c.xp -= xpToNext(c.level);

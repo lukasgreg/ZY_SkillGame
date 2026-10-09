@@ -45,6 +45,7 @@ const MIGRATIONS: Record<number, (s: any) => any> = {
     version: 14,
     chars: s.chars.map((c: any) => ({ ...c, skills: { ...c.skills, alchemy: 0 }, locks: { ...c.locks, alchemy: 'up' }, buffs: [], poison: null, coat: 0 })),
   }),
+  14: (s) => ({ ...s, version: 15, house: null }),
 };
 
 /** v9 → v10: the four old armour items become pieces of the new families; the body slot becomes chest. */

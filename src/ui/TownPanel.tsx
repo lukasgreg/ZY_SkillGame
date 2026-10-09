@@ -7,6 +7,7 @@ import { itemName, nameOf, num, t } from '../i18n';
 import { bankAll, buy, buyResource, deliver, repair, sell, sellToSmith, sellWanderer, travel } from './actions';
 import { Card, Durability } from './common';
 import { ContractBoard } from './Contracts';
+import { HousingCard } from './Housing';
 import { commissionCost, parsePattern } from '../engine/patterns';
 import { commissionPattern } from './actions';
 import { Pack } from './Pack';
@@ -199,6 +200,7 @@ export function TownPanel({ s, c }: { s: GameState; c: Character }) {
       </div>
 
       <div class="stack">
+        <HousingCard s={s} />
         <ContractBoard s={s} c={c} />
         <MasterCraftsman s={s} c={c} />
         <Card title={t('town.bank')} note={t('town.bankNote')}>

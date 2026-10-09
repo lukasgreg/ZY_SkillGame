@@ -1,6 +1,7 @@
 import { ITEMS } from '../data/items';
 import { GATHER_SKILL, YIELDS, type AreaId, type GatherLoc, type ResourceId } from '../data/resources';
 import { addRes } from './character';
+import { activeHouse } from './housing';
 import { areaOf, pullAmount, pullChance } from './gather';
 import { pickWeighted, type Rng } from './rng';
 import type { Character, GameState, ItemInstance, Worker } from './state';
@@ -17,7 +18,7 @@ const WORKER_WEAR_CHANCE = 0.15;
 const NAMES = ['Ota', 'Bára', 'Kuba', 'Hedvika', 'Ruprecht', 'Zdena', 'Matěj', 'Ilsa', 'Vok', 'Runa', 'Šimon', 'Dorota', 'Gunnar', 'Alžběta'];
 
 export function slots(s: GameState): number {
-  return BASE_SLOTS + s.bunkhouse;
+  return BASE_SLOTS + s.bunkhouse + (activeHouse(s)?.workerSlots ?? 0);
 }
 
 /** Each hire costs 60% more than the last. */

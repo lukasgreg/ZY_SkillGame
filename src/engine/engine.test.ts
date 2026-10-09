@@ -1113,3 +1113,33 @@ describe('paragons', () => {
     expect(s.stats.paragons).toBe(1);
   });
 });
+
+import { activeHouse, collectRent, DAY_MS, harvestGarden, rentHouse } from './housing';
+
+describe('housing', () => {
+  it('rent comes from the bank daily; unpaid rent stops perks, and three days evicts', () => {
+    const { s } = setup();
+    const t0 = 1_000_000_000_000;
+    s.bank.gold = 100;
+    expect(rentHouse(s, 'cottage', t0)).toBe(true);
+    expect(s.bank.gold).toBe(50);
+    expect(activeHouse(s, t0)?.workerSlots).toBe(1);
+    expect(collectRent(s, t0 + 2.5 * DAY_MS)).toEqual(['paid']);
+    expect(collectRent(s, t0 + 3.5 * DAY_MS)).toEqual(['paid']);
+    expect(s.bank.gold).toBe(0);
+    expect(collectRent(s, t0 + 4.5 * DAY_MS)).toEqual(['unpaid']);
+    expect(activeHouse(s, t0 + 4.5 * DAY_MS)).toBe(null);
+    expect(collectRent(s, t0 + 7.5 * DAY_MS)).toEqual(['evicted']);
+    expect(s.house).toBe(null);
+  });
+
+  it('the garden fills the bank hourly', () => {
+    const { s } = setup();
+    const now = Date.now();
+    s.bank.gold = 10_000;
+    rentHouse(s, 'villa', now - 3 * 3600_000);
+    s.house!.paidUntil = now + DAY_MS;
+    const got = harvestGarden(s, mulberry32(1), now);
+    expect(Object.values(got).reduce((a, b) => a + (b ?? 0), 0)).toBe(30);
+  });
+});
