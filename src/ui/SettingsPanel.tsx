@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { clearLocal, exportSave, importSave } from '../engine/save';
 import { log, newGameState, type GameState } from '../engine/state';
 import { setLang, skillNum, t, type Lang } from '../i18n';
+import { CloudCard } from './Cloud';
 import { Card } from './common';
 import { replaceState, update } from './store';
 
@@ -81,6 +82,7 @@ export function SettingsPanel({ s, onNewChar }: { s: GameState; onNewChar: () =>
       </div>
 
       <div class="stack">
+        <CloudCard />
         <Card title={t('settings.save')} note={t('settings.saveNote')}>
           <div class="row">
             <button

@@ -639,3 +639,69 @@ describe('achievements', () => {
     expect(back.achievements).toEqual({});
   });
 });
+
+import { connect, download, newer, upload, type CloudConfig } from './cloud';
+
+describe('cloud save (gist)', () => {
+  function fakeGitHub() {
+    const gists: Record<string, { id: string; files: Record<string, { content: string }> }> = {};
+    const calls: string[] = [];
+    const f = (async (url: string, init: RequestInit = {}) => {
+      const method = init.method ?? 'GET';
+      calls.push(`${method} ${url.replace('https://api.github.com', '')}`);
+      const auth = (init.headers as Record<string, string>)?.Authorization;
+      if (auth !== 'Bearer good') return new Response('{}', { status: 401 });
+      const path = url.replace('https://api.github.com', '');
+      const json = (v: unknown) => new Response(JSON.stringify(v), { status: 200 });
+      if (path === '/user') return json({ login: 'lukasgreg' });
+      if (path.startsWith('/gists?')) return json(Object.values(gists));
+      if (path === '/gists' && method === 'POST') {
+        const body = JSON.parse(init.body as string);
+        const g = { id: 'g1', files: body.files };
+        gists.g1 = g;
+        return json(g);
+      }
+      const id = path.split('/')[2];
+      if (method === 'PATCH') {
+        gists[id].files = { ...gists[id].files, ...JSON.parse(init.body as string).files };
+        return json(gists[id]);
+      }
+      return gists[id] ? json(gists[id]) : new Response('{}', { status: 404 });
+    }) as unknown as typeof fetch;
+    return { f, gists, calls };
+  }
+
+  it('connects, creates the gist once, and round-trips a save', async () => {
+    const { f, calls } = fakeGitHub();
+    const { s, c } = setup();
+    c.name = 'Bodrik';
+    const cfg = await connect(f, 'good', s);
+    expect(cfg).toEqual({ token: 'good', gistId: 'g1', login: 'lukasgreg' });
+    const again = await connect(f, 'good', s);
+    expect(again.gistId).toBe('g1');
+    expect(calls.filter((x) => x.startsWith('POST')).length).toBe(1);
+    c.gold = 4321;
+    await upload(f, cfg as CloudConfig, s);
+    const back = await download(f, cfg);
+    expect(back!.chars[0].gold).toBe(4321);
+  });
+
+  it('rejects a bad token', async () => {
+    const { f } = fakeGitHub();
+    const { s } = setup();
+    await expect(connect(f, 'bad', s)).rejects.toMatchObject({ kind: 'auth' });
+  });
+
+  it('the copy the player touched last wins; an empty game never beats the cloud', () => {
+    const a = setup().s;
+    const b = setup().s;
+    a.editedAt = 1_000_000;
+    b.editedAt = 2_000_000;
+    expect(newer(a, b)).toBe('cloud');
+    expect(newer(b, a)).toBe('local');
+    expect(newer(a, null)).toBe('local');
+    const empty = newGameState('en');
+    empty.editedAt = 9_999_999;
+    expect(newer(empty, a)).toBe('cloud');
+  });
+});

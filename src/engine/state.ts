@@ -241,6 +241,8 @@ export interface GameState {
   nextContractAt: number;
   uidSeq: number;
   lastSeen: number;
+  /** When the player last did something (not background ticks); decides which copy wins in cloud sync. */
+  editedAt?: number;
 }
 
 /** Lifetime counters shared by all characters in the save (they feed achievements). */

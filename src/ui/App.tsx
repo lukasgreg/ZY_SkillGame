@@ -3,6 +3,7 @@ import { activeChar } from '../engine/state';
 import { t } from '../i18n';
 import { AchievementToast, AchievementsPanel } from './AchievementsPanel';
 import { CharacterPanel } from './CharacterPanel';
+import { CloudBanner } from './Cloud';
 import { Card, JournalLines } from './common';
 import { Create } from './Create';
 import { DungeonPanel } from './DungeonPanel';
@@ -41,6 +42,7 @@ export function App() {
   if (!c || creating) {
     return (
       <main class="shell">
+        <CloudBanner />
         <Create onCancel={c ? () => setCreating(false) : undefined} onCreated={() => setCreating(false)} />
       </main>
     );
@@ -50,6 +52,7 @@ export function App() {
     <main class="shell">
       <Header c={c} />
       <AchievementToast />
+      <CloudBanner />
       <nav class="tabs" aria-label="Main">
         {TABS.map((id) => (
           <button key={id} class={`tab ${tab === id ? 'on' : ''}`} aria-current={tab === id ? 'page' : undefined} onClick={() => go(id)}>

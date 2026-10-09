@@ -71,6 +71,7 @@ export function scheduleSave(): void {
 /** Mutates the game state, re-renders and saves. */
 export function update(fn: (s: GameState) => void): void {
   fn(state);
+  state.editedAt = Date.now();
   achievements();
   emit();
   scheduleSave();

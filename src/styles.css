@@ -390,3 +390,8 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .toast strong { display: block; font-family: var(--display); }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, -12px); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* ---------- cloud ---------- */
+.cloud-banner { background: var(--paper); color: var(--ink); border: 2px solid var(--gold); padding: 12px 16px; }
+.cloud-banner p { margin: 0 0 4px; }
+.card a { color: var(--umber); }
