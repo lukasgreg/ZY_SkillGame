@@ -1,9 +1,9 @@
-import { CORPSE_MS, DUNGEONS, type DungeonId, type MonsterId } from '../data/dungeons';
+import { CORPSE_MS, DUNGEONS, MONSTERS, type DungeonId, type MonsterId } from '../data/dungeons';
 import { addRes } from './character';
 import { loot, playRound, startCombat, type Action, type Outcome } from './combat';
 import { mulberry32, pickWeighted, randInt, type Rng } from './rng';
 import { maxHp, maxStamina, trySkillGain } from './skills';
-import type { Character, DNode, GameState, LogEntry, RoomType, Run } from './state';
+import type { Character, DNode, Foe, GameState, LogEntry, RoomType, Run } from './state';
 
 /* ---------------- map generation (seeded) ---------------- */
 
@@ -57,6 +57,42 @@ export function roomFoes(id: DungeonId, node: DNode, seed: number): MonsterId[] 
   return Array.from({ length: n }, () => d.pool[rng() < 0.35 + node.layer * 0.06 ? 1 : 0]);
 }
 
+/** Monsters heal 2% of their hits per minute after you leave them. */
+const FOE_REGEN_PER_MIN = 0.02;
+
+/** Leaves the living monsters of the current fight in their room, wounds and all. */
+function stash(run: Run, node: DNode, now = Date.now()): void {
+  if (!run.combat) return;
+  node.foes = run.combat.foes.filter((f) => f.hp > 0).map((f) => ({ ...f, stunned: 0 }));
+  node.foesAt = now;
+  if (!node.foes.length) {
+    delete node.foes;
+    delete node.foesAt;
+  }
+}
+
+/** The monsters waiting in a room: wounded ones you left behind (healed a little), or a fresh group. */
+export function waitingFoes(run: Run, node: DNode, now = Date.now()): Foe[] {
+  if (node.foes?.length) {
+    const mins = Math.max(0, (now - (node.foesAt ?? now)) / 60_000);
+    return node.foes.map((f) => {
+      const max = MONSTERS[f.kind].hp;
+      return { ...f, stunned: 0, hp: Math.min(max, Math.round(f.hp + max * FOE_REGEN_PER_MIN * mins)) };
+    });
+  }
+  return roomFoes(run.dungeon, node, run.seed).map((k) => ({ kind: k, hp: MONSTERS[k].hp, stunned: 0 }));
+}
+
+function engage(run: Run, node: DNode): void {
+  const foes = waitingFoes(run, node);
+  const wounded = !!node.foes?.length;
+  delete node.foes;
+  delete node.foesAt;
+  run.combat = { ...startCombat([]), foes };
+  if (wounded) say(run, 'dun.foesWounded', { count: foes.length }, 'bad');
+  else say(run, node.type === 'boss' ? 'dun.boss' : 'dun.ambush', { count: foes.length }, 'bad');
+}
+
 /* ---------------- board & scouting ---------------- */
 
 export function nextSeed(s: GameState, id: DungeonId, rng: Rng): number {
@@ -96,13 +132,12 @@ export function enter(s: GameState, c: Character, id: DungeonId, rng: Rng, now =
   // Going back for your corpse: the same layout, with the rooms you cleared still cleared.
   const recover = corpseFresh(c, now) && c.corpse!.dungeon === id;
   const seed = recover ? c.corpse!.seed : nextSeed(s, id, rng);
-  const nodes = recover ? c.corpse!.nodes.map((n) => ({ ...n, next: [...n.next] })) : generate(id, seed);
+  const nodes = recover ? c.corpse!.nodes.map((n) => ({ ...n, next: [...n.next], foes: n.foes?.map((f) => ({ ...f })) })) : generate(id, seed);
   const run: Run = {
     dungeon: id, seed, nodes, at: 0, path: [0], sealed: false, bossDown: false, combat: null, retreated: false,
     scouted: recover ? 2 : s.scouted[id] ?? 0, log: [], loot: 0,
   };
   if (recover) {
-    nodes[c.corpse!.node].cleared = false;
     say(run, 'dun.recover', undefined, 'sys');
   } else {
     delete s.dungeonSeeds[id];
@@ -164,16 +199,22 @@ export function move(s: GameState, c: Character, to: number, rng: Rng): boolean 
 }
 
 function resolveRoom(s: GameState, c: Character, run: Run, node: DNode, rng: Rng): void {
+  // Your body is the first thing you reach: grab everything, then deal with whatever is here.
+  if (c.corpse && c.corpse.node === node.id && c.corpse.seed === run.seed && lootCorpse(c)) {
+    s.stats.recovered += 1;
+    say(run, 'dun.corpseGrabbed', undefined, 'gain');
+  }
+  if (node.foes?.length) {
+    engage(run, node);
+    return;
+  }
   if (node.cleared) return;
   switch (node.type) {
     case 'monster':
     case 'elite':
-    case 'boss': {
-      const foes = roomFoes(run.dungeon, node, run.seed);
-      run.combat = startCombat(foes);
-      say(run, node.type === 'boss' ? 'dun.boss' : 'dun.ambush', { count: foes.length }, 'bad');
+    case 'boss':
+      engage(run, node);
       break;
-    }
     case 'treasure': {
       const d = DUNGEONS[run.dungeon];
       const gold = randInt(rng, d.chest[0], d.chest[1]);
@@ -215,7 +256,6 @@ function resolveRoom(s: GameState, c: Character, run: Run, node: DNode, rng: Rng
     case 'start':
       break;
   }
-  if (c.corpse && c.corpse.node === node.id && corpseFresh(c) && node.cleared) say(run, 'dun.corpseHere', undefined, 'sys');
 }
 
 /** Plays a round of the current fight and handles winning, fleeing and dying. */
@@ -235,9 +275,10 @@ export function fight(s: GameState, c: Character, action: Action, rng: Rng): Out
     }
     if (c.corpse && c.corpse.node === node.id && corpseFresh(c)) say(run, 'dun.corpseHere', undefined, 'sys');
   } else if (out === 'fled') {
-    // Monsters stay. Step back a room if the way back isn't sealed behind this room.
-    run.combat = null;
+    // Monsters stay, wounds and all. Step back a room if the way back isn't sealed behind this room.
     const node = here(run);
+    stash(run, node);
+    run.combat = null;
     if (run.path.length > 1 && !node.oneWay) {
       run.path.pop();
       run.at = run.path[run.path.length - 1];
@@ -246,16 +287,20 @@ export function fight(s: GameState, c: Character, action: Action, rng: Rng): Out
       run.retreated = true;
       say(run, 'dun.cornered', undefined, 'sys');
     }
-  } else if (out === 'died') die(s, c);
+  } else if (out === 'died') {
+    stash(run, here(run));
+    die(s, c);
+  }
   return out;
 }
 
 /** Faces the monsters again after fleeing into a corner of their room. */
 export function reengage(c: Character): boolean {
   const run = c.run;
-  if (!run || run.combat || here(run).cleared) return false;
+  const node = run && here(run);
+  if (!run || !node || run.combat || (node.cleared && !node.foes?.length)) return false;
   run.retreated = false;
-  run.combat = startCombat(roomFoes(run.dungeon, here(run), run.seed));
+  engage(run, node);
   return true;
 }
 
@@ -307,7 +352,7 @@ export function die(s: GameState, c: Character, now = Date.now()): void {
 export function lootCorpse(c: Character, now = Date.now()): boolean {
   const run = c.run;
   const k = c.corpse;
-  if (!run || !k || k.decaysAt <= now || run.at !== k.node || run.combat || !here(run).cleared) return false;
+  if (!run || !k || k.decaysAt <= now || run.at !== k.node || run.seed !== k.seed) return false;
   for (const [id, n] of Object.entries(k.pack.res)) addRes(c.pack, id as never, n ?? 0);
   c.pack.items.push(...k.pack.items);
   c.gold += k.gold;

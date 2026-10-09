@@ -390,7 +390,7 @@ describe('contracts and plans', () => {
 });
 
 import { canStance, equip, hitChance, setStance, weaponInfo } from './combat';
-import { camp, canLeave, decay, enter, exits, fight, generate, here, leave, lootCorpse, move, scout } from './dungeon';
+import { camp, canLeave, decay, enter, exits, fight, generate, here, leave, move, scout, waitingFoes } from './dungeon';
 import { DUNGEON_IDS } from '../data/dungeons';
 
 function warrior(seed = 3) {
@@ -495,23 +495,40 @@ describe('dungeons', () => {
     expect(c.gold).toBe(0);
     expect(c.pack.items.length).toBe(0);
     const corpseNode = c.corpse!.node;
-    // go back with a fresh body and clear the way
+    // go back with a fresh body: walking into the room grabs the corpse before the fight resumes
     for (const k of ['edged', 'tactics', 'shieldBlock'] as const) c.skills[k] = 1000;
     const again = enter(s, c, 'frostCave', rng)!;
     expect(again.seed).toBe(c.corpse!.seed);
-    let steps = 0;
-    while (again.at !== corpseNode && steps++ < 100) {
-      c.hp = 999;
-      if (again.combat) fight(s, c, { type: 'attack' }, rng);
-      else move(s, c, again.nodes[0].next.includes(corpseNode) ? corpseNode : exits(again)[0].id, rng);
-    }
-    while (again.combat) {
-      c.hp = 999;
-      fight(s, c, { type: 'attack' }, rng);
-    }
-    expect(lootCorpse(c)).toBe(true);
-    expect(c.gold).toBeGreaterThanOrEqual(gold);
+    move(s, c, corpseNode, rng);
     expect(c.corpse).toBe(null);
+    expect(c.gold).toBeGreaterThanOrEqual(gold);
+    expect(c.pack.items.length).toBeGreaterThan(0);
+    expect(again.combat).not.toBe(null);
+    expect(s.stats.recovered).toBe(1);
+  });
+
+  it('monsters you flee from keep their wounds and heal only slowly', () => {
+    const { s, c } = warrior(21);
+    const rng = mulberry32(21);
+    const run = enter(s, c, 'manor', rng)!;
+    const first = exits(run)[0].id;
+    move(s, c, first, rng);
+    const foe = run.combat!.foes[0];
+    foe.hp = 5;
+    c.stats.dex = 200;
+    let out = null;
+    for (let i = 0; i < 20 && out !== 'fled'; i++) {
+      c.hp = 999;
+      out = fight(s, c, { type: 'flee' }, rng);
+    }
+    expect(out).toBe('fled');
+    const node = run.nodes[first];
+    expect(node.foes?.length).toBeGreaterThan(0);
+    // ten minutes later they have healed 20% of their hits, not all of it
+    node.foesAt = Date.now() - 10 * 60_000;
+    const back = waitingFoes(run, node)[0];
+    expect(back.hp).toBeLessThan(42);
+    expect(back.hp).toBeGreaterThan(5);
   });
 
   it('corpses decay after five minutes', () => {

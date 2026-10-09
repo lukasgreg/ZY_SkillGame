@@ -238,7 +238,7 @@ function Room({ c, run }: { c: Character; run: Run }) {
   const busy = !!transient.busy;
   const node = here(run);
   const next = exits(run);
-  const atCorpse = c.corpse && corpseFresh(c) && c.corpse.seed === run.seed && c.corpse.node === node.id && node.cleared;
+  const atCorpse = c.corpse && corpseFresh(c) && c.corpse.seed === run.seed && c.corpse.node === node.id;
   const damaged = c.pack.items.filter((i) => i.dur < i.maxDur);
   return (
     <Card title={t(`room.${node.type}`)}>

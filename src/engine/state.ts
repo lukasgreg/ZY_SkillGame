@@ -125,6 +125,9 @@ export interface DNode {
   /** Entering this room seals the way back (a collapse or a drop). */
   oneWay: boolean;
   cleared: boolean;
+  /** Monsters still here after you fled or died, with their wounds; they heal slowly from `foesAt`. */
+  foes?: Foe[];
+  foesAt?: number;
 }
 
 export interface Foe {

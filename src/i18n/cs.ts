@@ -2,6 +2,10 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'dun.corpseGrabbed': 'Dostáváš se ke svému tělu a bereš zpět vše, co neslo!',
+  'dun.foesWounded_one': 'Příšera, která tu zůstala, pořád čeká, stále zraněná.',
+  'dun.foesWounded_few': 'Příšery, které tu zůstaly, tu pořád čekají, stále zraněné ({count}).',
+  'dun.foesWounded_other': 'Příšery, které tu zůstaly, tu pořád čekají, stále zraněné ({count}).',
   'cloud.title': 'Uložení do cloudu (GitHub)',
   'cloud.note': 'Hraj na více počítačích: hra ukládá kopii do tajného gistu na tvém GitHub účtu a synchronizuje ji každé dvě minuty a při odchodu ze stránky.',
   'cloud.step1': 'Vytvoř fine-grained token:',

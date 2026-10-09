@@ -5,6 +5,9 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'dun.corpseGrabbed': 'You reach your body and snatch back everything it carried!',
+  'dun.foesWounded_one': 'The monster you left here is still waiting, still wounded.',
+  'dun.foesWounded_other': 'The {count} monsters you left here are still waiting, still wounded.',
   'cloud.title': 'Cloud save (GitHub)',
   'cloud.note': 'Play on several computers: the game keeps a copy of your save in a secret gist on your GitHub account and syncs it every two minutes and when you leave the page.',
   'cloud.step1': 'Create a fine-grained token:',
