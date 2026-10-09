@@ -170,8 +170,9 @@ function Fight({ c, run }: { c: Character; run: Run }) {
     <Card title={t('fight.title', { n: cb.round })}>
       <ul class="foes">
         {cb.foes.map((f, i) => (
-          <li key={i} class={f.hp <= 0 ? 'dead' : ''}>
+          <li key={i} class={`${f.hp <= 0 ? 'dead' : ''} ${f.paragon ? 'paragon' : ''}`}>
             <span>
+              {f.paragon && <b class="paragon-tag">{t('paragon')} </b>}
               {f.affix && <b class="affix">{t(`affix.${f.affix}`)} </b>}
               {t(`mon.${f.kind}`)} <span class="muted small">({t(`family.${MONSTERS[f.kind].family}`)})</span>
               {f.stunned > 0 && <span class="muted small"> · {t('fight.stunnedTag')}</span>}

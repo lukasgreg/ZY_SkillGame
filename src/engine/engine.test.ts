@@ -1079,3 +1079,37 @@ describe('alchemy and poison', () => {
     expect(after.every((h, i) => h < before[i])).toBe(true);
   });
 });
+
+import { PARAGON } from './combat';
+
+describe('paragons', () => {
+  it('are rare, much tougher, and pay out when slain', () => {
+    const { s, c } = warrior(50);
+    const rng = mulberry32(50);
+    // about 2% of monsters in ordinary rooms are paragons
+    let seen = 0;
+    let total = 0;
+    for (let seed = 1; seed < 400; seed++) {
+      const run = enter(s, c, 'manor', mulberry32(seed))!;
+      for (const n of run.nodes.filter((x) => x.type === 'monster')) {
+        const fs = waitingFoes(run, n);
+        total += fs.length;
+        seen += fs.filter((f) => f.paragon).length;
+      }
+      c.run = null;
+      c.location = 'town';
+    }
+    expect(seen / total).toBeGreaterThan(0.01);
+    expect(seen / total).toBeLessThan(0.04);
+    enter(s, c, 'cellar', rng);
+    const hp = MONSTERS.smuggler.hp * PARAGON.hp;
+    c.run!.combat = startCombat([]);
+    c.run!.combat.foes = [{ kind: 'smuggler', hp, max: hp, stunned: 0, paragon: true }];
+    for (const k of ['edged', 'tactics'] as const) c.skills[k] = 1000;
+    for (let i = 0; i < 200 && c.run?.combat; i++) {
+      c.hp = 999;
+      fight(s, c, { type: 'attack' }, rng);
+    }
+    expect(s.stats.paragons).toBe(1);
+  });
+});

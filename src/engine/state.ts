@@ -156,6 +156,8 @@ export interface Foe {
   affix?: Affix;
   /** Rounds of poison left on this monster (from a coated weapon). */
   poisoned?: number;
+  /** A rare gold-skinned paragon: much stronger, much richer (docs/PLAN_V3.md, phase I). */
+  paragon?: boolean;
   /** Rounds left stunned. */
   stunned: number;
 }
@@ -301,6 +303,10 @@ export interface Stats {
   deaths: number;
   recovered: number;
   tamed: number;
+  paragons?: number;
+  potions?: number;
+  chests?: number;
+  patternsUsed?: number;
 }
 
 export const newStats = (): Stats => ({

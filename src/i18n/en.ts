@@ -5,6 +5,8 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'paragon': 'Paragon',
+  'dun.paragon': 'A gold-skinned paragon {foe} steps out of the dark! It is far stronger than its kind.',
   'skill.alchemy': 'Alchemy',
   'item.mortar': 'Mortar and Pestle',
   'res.ginseng': 'Ginseng',

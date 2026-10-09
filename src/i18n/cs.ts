@@ -2,6 +2,8 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'paragon': 'Paragon',
+  'dun.paragon': 'Ze tmy vystupuje zlatokožý paragon ({foe})! Je mnohem silnější než ostatní.',
   'skill.alchemy': 'Alchymie',
   'item.mortar': 'hmoždíř',
   'res.ginseng': 'Ženšen',

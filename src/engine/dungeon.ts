@@ -10,6 +10,7 @@ import { RECIPES } from '../data/recipes';
 import type { ResourceId } from '../data/resources';
 import { makeCrafted } from './craft';
 import { canControl, gainPetXp, tryTame } from './pets';
+import { PARAGON } from './combat';
 import { addPattern, rollPattern } from './patterns';
 import type { Character, DNode, Foe, GameState, LogEntry, RoomType, Run } from './state';
 
@@ -162,10 +163,12 @@ export function waitingFoes(run: Run, node: DNode, now = Date.now()): Foe[] {
   }
   const d = DUNGEONS[run.dungeon];
   const rng = mulberry32(run.seed * 17 + node.id * 131);
+  const paragonChance = run.omen === 'infested' ? 0.04 : 0.02;
   return roomFoes(run.dungeon, node, run.seed).map((k) => {
     const affix = node.type === 'boss' ? undefined : rollAffix(d, node.layer, rng);
-    const max = Math.round(MONSTERS[k].hp * (affix === 'giant' ? 1.5 : 1));
-    return { kind: k, hp: max, max, stunned: 0, affix };
+    const paragon = node.type !== 'boss' && rng() < paragonChance;
+    const max = Math.round(MONSTERS[k].hp * (affix === 'giant' ? 1.5 : 1) * (paragon ? PARAGON.hp : 1));
+    return { kind: k, hp: max, max, stunned: 0, affix, paragon: paragon || undefined };
   });
 }
 
@@ -177,6 +180,7 @@ function engage(run: Run, node: DNode): void {
   run.combat = { ...startCombat([]), foes };
   if (wounded) say(run, 'dun.foesWounded', { count: foes.length }, 'bad');
   else say(run, node.type === 'boss' ? 'dun.boss' : 'dun.ambush', { count: foes.length }, 'bad');
+  for (const f of foes) if (f.paragon && !wounded) say(run, 'dun.paragon', { foe: `@mon.${f.kind}` }, 'bad');
 }
 
 /* ---------------- board & scouting ---------------- */
@@ -531,6 +535,26 @@ export function lairBeast(run: Run): MonsterId {
   return sk >= 4 ? 'drake' : sk >= 3 ? 'direwolf' : 'bear';
 }
 
+/** What a slain paragon leaves behind: a pattern (35%) or rare materials, and maybe a plan fragment. */
+function paragonReward(s: GameState, c: Character, run: Run, rng: Rng): void {
+  const d = DUNGEONS[run.dungeon];
+  s.stats.paragons = (s.stats.paragons ?? 0) + 1;
+  if (rng() < 0.35) {
+    const p = rollPattern(Math.min(5, d.skulls + 1), rng);
+    addPattern(s, p.def, p.metal);
+    say(run, 'dun.chestPattern', { item: `%${p.def}|${p.metal}|0|0` }, 'gain');
+  } else {
+    const rare: ResourceId = d.skulls >= 4 ? 'dragonScale' : d.skulls >= 2 ? 'etherealOre' : 'roughGem';
+    const n = randInt(rng, 2, 3 + d.skulls);
+    addRes(c.pack, rare, n);
+    say(run, 'fight.drop', { n, res: `@res.${rare}` }, 'gain');
+  }
+  if (rng() < 0.5) {
+    addRes(c.pack, 'planFragment', 1);
+    say(run, 'fight.drop', { n: 1, res: '@res.planFragment' }, 'gain');
+  }
+}
+
 /* ---------------- moving back and the boss's chest ---------------- */
 
 /** Steps back to the previous room, unless a collapse or a drop sealed the way behind you. */
@@ -597,7 +621,8 @@ export function fight(s: GameState, c: Character, action: Action, rng: Rng): Out
     c.stamina = Math.min(maxStamina(c), c.stamina + Math.round(maxStamina(c) * 0.3));
     loot(c, run, run.combat.foes, rng);
     const omenMult = run.omen === 'infested' ? 1.25 : 1;
-    const xp = Math.round(run.combat.foes.filter((f) => f.hp <= 0).reduce((n, f) => n + killXp(f.kind) * (f.affix ? 1.4 : 1), 0) * omenMult);
+    const xp = Math.round(run.combat.foes.filter((f) => f.hp <= 0).reduce((n, f) => n + killXp(f.kind) * (f.affix ? 1.4 : 1) * (f.paragon ? PARAGON.xp : 1), 0) * omenMult);
+    for (const f of run.combat.foes) if (f.paragon && f.hp <= 0) paragonReward(s, c, run, rng);
     if (xp) {
       gainXp(c, xp);
       say(run, 'fight.xp', { n: xp }, 'gain');

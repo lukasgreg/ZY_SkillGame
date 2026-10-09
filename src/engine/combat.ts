@@ -200,7 +200,7 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   }
   const atk = c.skills[w.skill] / 10;
   const tired = exhausted(c);
-  const p = clamp(hitChance(atk, mon.skill, c.skills.tactics / 10) + (opts.hitBonus ?? 0) - (tired ? 0.15 : 0), 0.05, 0.97);
+  const p = clamp(hitChance(atk, foeSkill(target), c.skills.tactics / 10) + (opts.hitBonus ?? 0) - (tired ? 0.15 : 0), 0.05, 0.97);
   const hit = rng() < p;
   const now = new Date();
   const g1 = trySkillGain(c, w.skill, p, hit, rng, gainOpts(mon.skill, now));
@@ -222,7 +222,7 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const crit = rng() < c.skills.anatomy / 2000;
   let dmg = randInt(rng, w.dmg[0], w.dmg[1]) * metal * q * bonus * STANCE_DEALT[c.stance] * (opts.dmgMult ?? 1) * (crit ? 1.5 : 1) * (tired ? 0.75 : 1);
   dmg *= run.buff ?? 1;
-  const foeArmor = mon.armor + (target.affix === 'armored' ? 4 : 0);
+  const foeArmor = mon.armor + (target.affix === 'armored' ? 4 : 0) + (target.paragon ? PARAGON.armor : 0);
   dmg = Math.max(1, Math.round(dmg - foeArmor * (0.5 + rng() * 0.5)));
   target.hp -= dmg;
   say(run, crit ? 'fight.crit' : 'fight.hit', { foe: foeName(target), dmg }, 'good');
@@ -322,7 +322,7 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
   }
   const w = weaponInfo(c);
   const def = c.skills[w.skill] / 10;
-  const p = hitChance(mon.skill, def) * (cb.cowed > 0 ? 0.75 : 1) * (cb.guard ? 0.75 : 1);
+  const p = hitChance(foeSkill(f), def) * (cb.cowed > 0 ? 0.75 : 1) * (cb.guard ? 0.75 : 1);
   if (rng() >= p) {
     say(run, 'fight.foeMiss', { foe: foeName(f) });
     return false;
@@ -350,7 +350,7 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
   }
   const armor = armorValue(c);
   const reduce = (c.stance === 'defensive' ? armor * 0.75 : armor * (0.4 + rng() * 0.6)) * ARMOUR_SCALE;
-  const rage = f.affix === 'enraged' ? 1.3 : 1;
+  const rage = (f.affix === 'enraged' ? 1.3 : 1) * (f.paragon ? PARAGON.dmg : 1);
   const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * rage * STANCE_TAKEN[c.stance] * wardMult(c, mon.family) - reduce));
   c.hp -= dmg;
   say(run, 'fight.hurt', { foe: foeName(f), dmg }, 'bad');
@@ -544,7 +544,7 @@ export function loot(c: Character, run: Run, foes: Foe[], rng: Rng): number {
   let gold = 0;
   for (const f of foes) {
     const m = MONSTERS[f.kind];
-    gold += randInt(rng, m.gold[0], m.gold[1]);
+    gold += randInt(rng, m.gold[0], m.gold[1]) * (f.paragon ? PARAGON.gold : 1);
     for (const [res, p, lo, hi] of m.drops ?? []) {
       if (rng() < p) {
         const n = randInt(rng, lo, hi);
@@ -562,3 +562,7 @@ export function loot(c: Character, run: Run, foes: Foe[], rng: Rng): number {
 }
 
 export const isFood = (id: ResourceId) => !!RESOURCES[id].food;
+
+/** Paragons (docs/PLAN_V3.md, phase I): rare gold-skinned monsters. */
+export const PARAGON = { hp: 4, dmg: 1.8, armor: 5, skill: 10, xp: 5, gold: 6 };
+const foeSkill = (f: Foe) => MONSTERS[f.kind].skill + (f.paragon ? PARAGON.skill : 0);
