@@ -164,9 +164,12 @@ function say(run: Run, k: string, p?: LogEntry['p'], c?: LogEntry['c']): void {
 
 const foeName = (f: Foe) => `@mon.${f.kind}`;
 
-/** UO-style hit chance: (attacker + 20) / ((defender + 20) × 2), with a small Tactics bonus. */
+/**
+ * UO-style hit chance, softened for low skill: (attacker + 40) / ((defender + 40) × 2) × 1.2, so equals hit
+ * 60% of the time and a beginner still lands blows. A small Tactics bonus on top.
+ */
 export function hitChance(atk: number, def: number, tactics = 0): number {
-  return clamp(((atk + 20) / ((def + 20) * 2)) * (1 + tactics / 400), 0.05, 0.95);
+  return clamp(((atk + 40) / ((def + 40) * 2)) * 1.2 * (1 + tactics / 400), 0.05, 0.95);
 }
 
 export function startCombat(kinds: MonsterId[]): Combat {
@@ -212,7 +215,8 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const md = it?.mat ? METALS[it.mat] : null;
   const metal = (md?.dmgMult ?? 1) * (md?.slays?.[mon.family] ?? 1);
   const q = it ? qualityMult(it) : 1;
-  const bonus = 1 + c.skills.tactics / 2000 + c.skills.anatomy / 2000 + c.stats.str / 300;
+  const ranger = c.profession === 'ranger' && w.skill === 'archery' ? 1.15 : 1;
+  const bonus = (1 + c.skills.tactics / 2000 + c.skills.anatomy / 2000 + c.stats.str / 300) * ranger;
   const crit = rng() < c.skills.anatomy / 2000;
   let dmg = randInt(rng, w.dmg[0], w.dmg[1]) * metal * q * bonus * STANCE_DEALT[c.stance] * (opts.dmgMult ?? 1) * (crit ? 1.5 : 1) * (tired ? 0.75 : 1);
   dmg *= run.buff ?? 1;
@@ -316,6 +320,11 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
     say(run, 'fight.foeMiss', { foe: foeName(f) });
     return false;
   }
+  // Rangers are light on their feet and sidestep some blows.
+  if (c.profession === 'ranger' && rng() < 0.1 + c.stats.dex / 500) {
+    say(run, 'fight.dodge', { foe: foeName(f) }, 'good');
+    return false;
+  }
   const shield = equipped(c, 'shield');
   const now = new Date();
   if (shield) {
@@ -367,6 +376,12 @@ export function fleeChance(c: Character, cb: Combat): number {
  */
 export function playRound(c: Character, run: Run, action: Action, rng: Rng): Outcome {
   const cb = run.combat!;
+  // Archers loose a free volley while the enemy closes in.
+  if (cb.round === 1 && !cb.volley && usesArrows(c) && (c.pack.res.arrow ?? 0) > 0) {
+    cb.volley = true;
+    say(run, 'fight.volley', undefined, 'good');
+    attack(c, run, cb, rng);
+  }
   const myInit = c.stats.dex + randInt(rng, 0, 10) + (1.2 - weaponInfo(c).speed) * 20 + (cb.first ? 100 : 0);
   cb.first = false;
   type Turn = { who: 'me' } | { who: 'foe'; f: Foe } | { who: 'ally'; a: Ally };

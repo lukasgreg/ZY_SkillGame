@@ -5,6 +5,8 @@
  * one starting with '#' is a number shown with one decimal (skill values).
  */
 export const en = {
+  'fight.dodge': 'You sidestep {foe}.',
+  'fight.volley': 'You loose an arrow as they close in.',
   'mon.chicken': 'Chicken',
   'mon.cat': 'Cat',
   'mon.goat': 'Goat',

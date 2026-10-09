@@ -188,6 +188,8 @@ export interface Combat {
   guard?: boolean;
   /** Arrows loosed this fight; some can be picked up afterwards. */
   arrowsShot?: number;
+  /** The archer's opening volley has been loosed. */
+  volley?: boolean;
 }
 
 export interface Run {

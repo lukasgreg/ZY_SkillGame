@@ -48,7 +48,7 @@ export function generate(id: DungeonId, seed: number): DNode[] {
   const d = DUNGEONS[id];
   const rng = mulberry32(seed);
   const omen = omenOf(seed);
-  const layers = randInt(rng, 12 + d.clocks * 2, 16 + d.clocks * 3);
+  const layers = randInt(rng, 5 + d.clocks * 3, 8 + d.clocks * 4);
   const nodes: DNode[] = [{ id: 0, layer: 0, type: 'start', next: [], oneWay: false, cleared: true }];
   const sealed = new Set<number>();
   const seals = 1 + Math.floor(d.clocks / 2);
@@ -592,6 +592,9 @@ export function fight(s: GameState, c: Character, action: Action, rng: Rng): Out
   const out = playRound(c, run, action, rng);
   if (out === 'won') {
     const node = here(run);
+    // Catch your breath after a won fight.
+    c.hp = Math.min(maxHp(c), c.hp + Math.round(maxHp(c) * 0.15));
+    c.stamina = Math.min(maxStamina(c), c.stamina + Math.round(maxStamina(c) * 0.3));
     loot(c, run, run.combat.foes, rng);
     const omenMult = run.omen === 'infested' ? 1.25 : 1;
     const xp = Math.round(run.combat.foes.filter((f) => f.hp <= 0).reduce((n, f) => n + killXp(f.kind) * (f.affix ? 1.4 : 1), 0) * omenMult);

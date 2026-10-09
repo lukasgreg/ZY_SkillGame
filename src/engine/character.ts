@@ -4,6 +4,7 @@ import { ITEMS, itemWeight, slotOf, type ItemDefId } from '../data/items';
 import { RESOURCES } from '../data/resources';
 import { randInt, type Rng } from './rng';
 import { maxHp, maxStamina } from './skills';
+import { makePet } from './pets';
 import { nextUid, type Character, type GameState, type Inventory, type ItemInstance, type Lock } from './state';
 
 export interface Roll {
@@ -41,7 +42,7 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
   const gear: Record<ProfessionId, ItemDefId[]> = {
     craftsman: ['hatchet', 'smithHammer', 'tinkerTools', 'club'],
     warrior: ['shortsword', 'buckler', 'leatherChest', 'leatherLegs', 'leatherHead'],
-    ranger: ['shortbow', 'fishingRod', 'leatherChest', 'leatherLegs'],
+    ranger: ['shortbow', 'fishingRod', 'leatherChest', 'leatherLegs', 'leatherHead', 'leatherArms'],
   };
   const items = [pick, ...gear[prof].map((d) => makeItem(s, d))];
   const equip: Character['equip'] = {};
@@ -83,6 +84,8 @@ export function createCharacter(s: GameState, name: string, race: RaceId, prof: 
   };
   c.hp = maxHp(c);
   c.stamina = maxStamina(c);
+  // Every ranger starts with a hound at their side.
+  if (prof === 'ranger') c.pets.push(makePet('dog', Date.now()));
   s.chars.push(c);
   s.active = c.id;
   return c;

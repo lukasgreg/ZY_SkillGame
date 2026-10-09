@@ -14,9 +14,9 @@ export function xpToNext(level: number): number {
   return level >= MAX_LEVEL ? Infinity : Math.round(300 * Math.pow(1.15, level - 1));
 }
 
-/** Share of the profession's skill cap available at a level: 35% at level 1, 100% from level 30. */
+/** Share of the profession's skill cap available at a level: 50% at level 1, 100% from level 30. */
 export function capFactor(level: number): number {
-  return Math.min(1, 0.35 + (0.65 * (level - 1)) / (CAP_LEVEL - 1));
+  return Math.min(1, 0.5 + (0.5 * (level - 1)) / (CAP_LEVEL - 1));
 }
 
 /** The skill cap that applies right now, in tenths. */
@@ -65,5 +65,5 @@ export function killXp(kind: MonsterId): number {
 
 /** Contracts are the craftsman's main road to levels (Endor's bulk orders). */
 export const contractXp = (gold: number) => Math.round(gold * 1.5);
-export const GATHER_XP = 0.5;
+export const GATHER_XP = 1;
 export const craftXp = (recipeMin: number) => Math.max(0.5, recipeMin / 20);

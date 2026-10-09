@@ -2,6 +2,8 @@ import type { MessageKey } from './en';
 
 /** Czech strings. Phrasing avoids gendered verb forms ("Získáno: …", "Kopeš…") so it fits any character. */
 export const cs: Record<MessageKey, string> & Record<string, string> = {
+  'fight.dodge': 'Uhneš: {foe}.',
+  'fight.volley': 'Než se přiblíží, stihneš vystřelit.',
   'mon.chicken': 'Slepice',
   'mon.cat': 'Kočka',
   'mon.goat': 'Koza',

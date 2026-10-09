@@ -411,7 +411,7 @@ describe('combat', () => {
   });
 
   it('hit chance is 50% between equals and rises with skill', () => {
-    expect(hitChance(50, 50)).toBeCloseTo(0.5);
+    expect(hitChance(50, 50)).toBeCloseTo(0.6);
     expect(hitChance(80, 50)).toBeGreaterThan(hitChance(50, 50));
   });
 
@@ -562,12 +562,15 @@ function ranger(seed = 4) {
   const s = newGameState('en');
   const c = createCharacter(s, 'Ylva', 'elf', 'ranger', rollCharacter('elf', 'ranger', rng));
   c.level = 30;
-  return { s, c, rng };
+  const hound = c.pets[0];
+  c.pets = []; // most pet tests start with an empty stable
+  return { s, c, rng, hound };
 }
 
 describe('taming and pets', () => {
-  it('rangers start with a bow and arrows', () => {
-    const { c } = ranger();
+  it('rangers start with a bow, arrows and a hound', () => {
+    const { c, hound } = ranger();
+    expect(hound.kind).toBe('dog');
     expect(weaponInfo(c).skill).toBe('archery');
     expect(c.pack.res.arrow).toBe(150);
   });
@@ -818,7 +821,7 @@ describe('levels', () => {
   it('skill caps open up with level until 30', () => {
     const { c } = setup();
     c.level = 1;
-    expect(effectiveCap(c, 'mining')).toBe(350);
+    expect(effectiveCap(c, 'mining')).toBe(500);
     c.level = 30;
     expect(effectiveCap(c, 'mining')).toBe(1000);
     expect(capFactor(45)).toBe(1);
@@ -923,8 +926,8 @@ describe('bigger random dungeons', () => {
       for (const seed of [1, 2, 3, 99, 12345]) {
         const nodes = generate(id, seed);
         const layers = Math.max(...nodes.map((n) => n.layer)) + 1;
-        expect(layers).toBeGreaterThanOrEqual(14);
-        expect(layers).toBeLessThanOrEqual(31);
+        expect(layers).toBeGreaterThanOrEqual(8);
+        expect(layers).toBeLessThanOrEqual(29);
         expect(nodes[nodes.length - 1].type).toBe('boss');
         const reach = new Set([0]);
         for (const n of nodes) if (reach.has(n.id)) n.next.forEach((x) => reach.add(x));
