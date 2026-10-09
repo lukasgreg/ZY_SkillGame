@@ -1,9 +1,9 @@
 import { ITEMS } from '../data/items';
 import { AREAS, GATHER_LOCS, GATHER_SKILL, type GatherLoc, type ResourceId } from '../data/resources';
-import { areaOpen, canGather, gatherTool, isGatherLoc, pullChance } from '../engine/gather';
+import { areaOpen, canGather, gainPreview, gatherTool, isGatherLoc, pullChance } from '../engine/gather';
 import type { Character, GameState } from '../engine/state';
 import { itemName, nameOf, num, t } from '../i18n';
-import { gather, hold, searchNode, setArea, travel } from './actions';
+import { gather, hold, searchNode, setArea, setAuto, travel } from './actions';
 import { Card, Durability, JournalLines } from './common';
 import { Pack } from './Pack';
 import { WildsPanel } from './WildsPanel';
@@ -146,6 +146,7 @@ export function GatherPanel({ s, c }: { s: GameState; c: Character }) {
   const block = canGather(c);
   const tool = gatherTool(c, skillId);
   const p = node ? pullChance(skill, node.res) : 0;
+  const gp = node ? gainPreview(c, node.res) : 0;
   const areaId = c.areas[loc];
 
   return (
@@ -194,7 +195,11 @@ export function GatherPanel({ s, c }: { s: GameState; c: Character }) {
             <>
               <div class="node-name">{t(`res.${node.res}`)}</div>
               <div class="node-sub">{node.left > 0 ? t('gather.left', { count: node.left }) : t(`gather.empty.${loc}`)}</div>
-              {node.left > 0 && <div class="node-sub">{t('mine.chance', { p: Math.round(p * 100) })}</div>}
+              {node.left > 0 && (
+                <div class="node-sub">
+                  {t('mine.chance', { p: Math.round(p * 100) })} · {gp > 0 ? t('gather.gainChance', { p: num(gp * 100, 1) }) : <span class="warn">{t('gather.tooEasy')}</span>}
+                </div>
+              )}
             </>
           ) : (
             <div class="node-sub">{t(`gather.none.${loc}`)}</div>
@@ -207,6 +212,10 @@ export function GatherPanel({ s, c }: { s: GameState; c: Character }) {
               {busy?.kind === 'search' ? t('mine.searching') : t(`gather.search.${loc}`)}
             </button>
           </div>
+          <label class="runic keep">
+            <input type="checkbox" id="keep-going" checked={transient.auto} onChange={(e) => setAuto((e.target as HTMLInputElement).checked)} />
+            {t('gather.keepGoing')}
+          </label>
           {block && block !== 'noNode' && <p class="warn">{t(`gather.block.${block}`)}</p>}
           <button class="btn btn-quiet" disabled={!!busy} onClick={() => travel('town')}>
             {busy?.kind === 'travel' ? t('mine.walking') : t('mine.goTown')}

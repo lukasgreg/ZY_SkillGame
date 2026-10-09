@@ -29,6 +29,8 @@ export interface Transient {
   queue: number;
   /** Which calming phrase is showing while taming. */
   phrase: number;
+  /** "Keep going" is on for gathering. */
+  auto: boolean;
   /** Last skill gain, for the floating "+0.1" flash. */
   flash: null | { text: string; id: number };
   /** Newly earned achievements, shown as a banner for a few seconds. */
@@ -65,7 +67,7 @@ export function scheduleSave(): void {
   saveTimer = window.setTimeout(() => saveLocal(state), 400);
 }
 
-export const transient: Transient = { busy: null, queue: 0, phrase: 0, flash: null, toast: null };
+export const transient: Transient = { busy: null, queue: 0, phrase: 0, auto: false, flash: null, toast: null };
 let toastSeq = 0;
 
 /** Shows a banner (achievement earned, level reached) for a few seconds. */

@@ -5,7 +5,8 @@ import type { SkillId, StatId } from '../data/skills';
 import { addRes, packWeight } from './character';
 import { wear } from './craft';
 import { clamp, pickWeighted, randInt, type Rng } from './rng';
-import { isPowerHour, maxWeight, trySkillGain } from './skills';
+import { gainChance, isPowerHour, maxWeight, trySkillGain } from './skills';
+import { effectiveCap } from './levels';
 import { GATHER_XP, gainXp } from './levels';
 import type { Character, ItemInstance, Node } from './state';
 
@@ -82,6 +83,21 @@ export function swingTime(c: Character, rng: Rng): number {
   return Math.round((2000 + rng() * 3000) * (1 - c.stats.dex / 400) * speed);
 }
 
+/** The skill (whole points) from which a resource teaches nothing more. */
+export function tooEasyAt(res: ResourceId): number {
+  return Math.min(YIELDS[res]!.best, 100) + 15;
+}
+
+/** Chance that the next pull raises the skill (averaged over success and failure), for the UI. */
+export function gainPreview(c: Character, res: ResourceId): number {
+  const skillId = YIELDS[res]!.skill;
+  const skill = c.skills[skillId] / 10;
+  if (c.skills[skillId] >= effectiveCap(c, skillId)) return 0;
+  const p = pullChance(skill, res);
+  const o = { rarity: RESOURCES[res].rarity, tooEasyAt: tooEasyAt(res), mult: isPowerHour() ? 1.5 : 1 };
+  return p * gainChance(skill, p, true, o) + (1 - p) * gainChance(skill, p, false, o);
+}
+
 /** Amount from one successful pull at a given skill. */
 export function pullAmount(skill: number, res: ResourceId, rng: Rng): number {
   const k = Math.max(0.2, progress(skill, res));
@@ -108,7 +124,6 @@ export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult
   const loc = c.location as GatherLoc;
   const skillId = GATHER_SKILL[loc];
   const node = c.node!;
-  const y = YIELDS[node.res]!;
   const skill = c.skills[skillId] / 10;
   const p = pullChance(skill, node.res);
   const ok = rng() < p;
@@ -125,7 +140,7 @@ export function pull(c: Character, rng: Rng, now: Date = new Date()): PullResult
 
   const gain = trySkillGain(c, skillId, p, ok, rng, {
     rarity: RESOURCES[node.res].rarity,
-    tooEasyAt: Math.min(y.best, 100) + 15,
+    tooEasyAt: tooEasyAt(node.res),
     mult: isPowerHour(now) ? 1.5 : 1,
   });
   const stat = null;

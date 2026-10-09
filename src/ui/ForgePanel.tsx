@@ -71,6 +71,7 @@ function RecipeRow({ s, c, r, metal, runic }: { s: GameState; c: Character; r: R
           <span class="small">
             {t('forge.chance', { p: pct(craftChance(skill, min, max)) })}
             {'item' in r.out && <> · {t('forge.exc', { p: pct(exceptionalChance(c, r, metal)) })}</>}
+            {skill >= max && <span class="warn"> · {t('gather.tooEasy')}</span>}
           </span>
         )}
         <span class="recipe-btns">
@@ -79,6 +80,9 @@ function RecipeRow({ s, c, r, metal, runic }: { s: GameState; c: Character; r: R
           </button>
           <button class="btn btn-small" disabled={busy || block !== null} onClick={() => craftItem(r, metal, 5, runic && canRunic(c, r))}>
             {t('forge.craftN', { n: 5 })}
+          </button>
+          <button class="btn btn-small" disabled={busy || block !== null} onClick={() => craftItem(r, metal, 999, runic && canRunic(c, r))}>
+            {t('forge.craftAll')}
           </button>
         </span>
       </div>

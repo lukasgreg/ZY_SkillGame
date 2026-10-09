@@ -1144,3 +1144,26 @@ describe('housing', () => {
     expect(Object.values(got).reduce((a, b) => a + (b ?? 0), 0)).toBe(30);
   });
 });
+
+import { claimGuide } from './guide';
+import { gainPreview } from './gather';
+
+describe('quality of life', () => {
+  it('guide steps pay out once when done', () => {
+    const { s, c } = setup();
+    const gold = c.gold;
+    expect(claimGuide(s, c, 'gather')).toBe(false);
+    s.stats.pulls = 10;
+    expect(claimGuide(s, c, 'gather')).toBe(true);
+    expect(c.gold).toBe(gold + 20);
+    expect(claimGuide(s, c, 'gather')).toBe(false);
+  });
+
+  it('the gain preview drops to zero when a task is too easy', () => {
+    const { c } = setup();
+    c.skills.mining = 100;
+    expect(gainPreview(c, 'ironOre')).toBeGreaterThan(0);
+    c.skills.mining = 500;
+    expect(gainPreview(c, 'ironOre')).toBe(0);
+  });
+});

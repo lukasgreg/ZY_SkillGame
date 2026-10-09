@@ -426,3 +426,7 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .btn.potion { border-color: #5f7a4a; }
 .foes li.paragon { background: linear-gradient(90deg, #f3d77a55, transparent); }
 .paragon-tag { color: #b8860b; text-shadow: 0 0 1px #ffd76a; }
+.keep { justify-content: center; }
+.guide-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.guide-steps li { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px dotted var(--brass); padding-bottom: 4px; }
+.guide-steps li.ready strong { color: var(--moss); }

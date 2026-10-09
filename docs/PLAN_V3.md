@@ -10,7 +10,7 @@ Each phase is playable and deployed on its own. **Status** shows where to pick u
 | I | Paragon enemies | done |
 | K | Housing with rent (cottage → keep) | done |
 | L | More achievements | done |
-| M | Quality of life: auto-repeat, beginner's guide, keyboard shortcuts | not started |
+| M | Quality of life: auto-repeat, beginner’s guide, keyboard shortcuts | done |
 
 ---
 

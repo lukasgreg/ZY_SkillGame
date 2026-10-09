@@ -281,6 +281,9 @@ export interface GameState {
   contractOffers: Contract[];
   contracts: Contract[];
   stats: Stats;
+  /** Beginner's guide steps already claimed; `guideHidden` once dismissed. */
+  guide?: string[];
+  guideHidden?: boolean;
   /** The rented house shared by all characters (docs/PLAN_V3.md, phase K). */
   house: HouseState | null;
   /** Achievement id → when it was earned. */

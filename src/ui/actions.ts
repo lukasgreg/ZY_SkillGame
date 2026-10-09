@@ -5,6 +5,7 @@ import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
 import { canControl, feed, healPet, release, resurrect, TAME_MS, track, tryTame, vetTime, wildAreaOpen } from '../engine/pets';
 import { bump } from '../engine/achievements';
+import { claimGuide } from '../engine/guide';
 import { usePotion } from '../engine/alchemy';
 import { commission } from '../engine/patterns';
 import { chooseEvent, goBack, openBossChest } from '../engine/dungeon';
@@ -77,6 +78,37 @@ export function gather(): void {
       if (r.fragment) log(s, 'log.fragment', undefined, 'gain');
     }),
   );
+}
+
+/**
+ * Keep going (UO macro style): after each swing, swing again; find a new spot when this one runs out;
+ * wait for stamina; stop when the pack is full, the tool breaks or you leave.
+ */
+export function setAuto(on: boolean): void {
+  transient.auto = on;
+  touch();
+  if (on) autoStep();
+}
+
+function autoStep(): void {
+  if (!transient.auto) return;
+  const c = activeChar(getState());
+  if (!c || !isGatherLoc(c.location)) return setAuto(false);
+  if (transient.busy) {
+    window.setTimeout(autoStep, 250);
+    return;
+  }
+  const block = canGather(c);
+  if (block === null) gather();
+  else if (block === 'noNode' || block === 'nodeEmpty') searchNode();
+  else if (block === 'tired') {
+    window.setTimeout(autoStep, 1000);
+    return;
+  } else {
+    withChar((s) => log(s, `gather.block.${block}`, undefined, 'bad'));
+    return setAuto(false);
+  }
+  window.setTimeout(autoStep, 250);
 }
 
 export function searchNode(): void {
@@ -589,4 +621,14 @@ export function drinkPotion(id: ResourceId): void {
     const r = usePotion(c, id, rng);
     if (r) log(s, `log.potion.${r.kind}`, { res: `@res.${id}`, n: r.kind === 'heal' ? r.n : 0 }, 'good');
   });
+}
+
+export function claimGuideStep(id: string): void {
+  withChar((s, c) => {
+    if (claimGuide(s, c, id)) log(s, 'log.guide', { step: `@guide.${id}` }, 'gain');
+  });
+}
+
+export function hideGuide(): void {
+  update((s) => (s.guideHidden = true));
 }

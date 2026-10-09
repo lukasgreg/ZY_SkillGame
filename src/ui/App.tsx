@@ -3,6 +3,9 @@ import { activeChar } from '../engine/state';
 import { t } from '../i18n';
 import { AchievementToast, AchievementsPanel } from './AchievementsPanel';
 import { CharacterPanel } from './CharacterPanel';
+import { Guide } from './Guide';
+import { fightAction, gather } from './actions';
+import { isGatherLoc } from '../engine/gather';
 import { CloudBanner } from './Cloud';
 import { Card, JournalLines } from './common';
 import { Create } from './Create';
@@ -34,6 +37,28 @@ export function App() {
     document.title = c ? `${c.name} · ${t('app.title')}` : t('app.title');
   });
 
+  // Keyboard: Space/Enter repeats the main action; in a fight 1 attack, 2 wait, 3 bandage, 4 flee.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'BUTTON' || e.ctrlKey || e.metaKey || e.altKey)) return;
+      const ch = activeChar(s);
+      if (!ch) return;
+      if (ch.run?.combat) {
+        const a = ({ '1': { type: 'attack' }, '2': { type: 'wait' }, '3': { type: 'bandage' }, '4': { type: 'flee' } } as const)[e.key as '1'];
+        if (a) {
+          e.preventDefault();
+          fightAction(a);
+        }
+      } else if ((e.key === ' ' || e.key === 'Enter') && tab === 'gather' && isGatherLoc(ch.location)) {
+        e.preventDefault();
+        gather();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const go = (next: Tab) => {
     setTab(next);
     history.replaceState(null, '', `#${next}`);
@@ -53,6 +78,7 @@ export function App() {
       <Header c={c} />
       <AchievementToast />
       <CloudBanner />
+      {(tab === 'gather' || tab === 'town') && <Guide s={s} c={c} />}
       <nav class="tabs" aria-label="Main">
         {TABS.map((id) => (
           <button key={id} class={`tab ${tab === id ? 'on' : ''}`} aria-current={tab === id ? 'page' : undefined} onClick={() => go(id)}>
