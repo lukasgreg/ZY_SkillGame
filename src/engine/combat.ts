@@ -216,7 +216,9 @@ function attack(c: Character, run: Run, cb: Combat, rng: Rng, opts: { dmgMult?: 
   const bonus = 1 + c.skills.tactics / 2000 + c.skills.anatomy / 2000 + c.stats.str / 300;
   const crit = rng() < c.skills.anatomy / 2000;
   let dmg = randInt(rng, w.dmg[0], w.dmg[1]) * metal * q * bonus * STANCE_DEALT[c.stance] * (opts.dmgMult ?? 1) * (crit ? 1.5 : 1) * (tired ? 0.75 : 1);
-  dmg = Math.max(1, Math.round(dmg - mon.armor * (0.5 + rng() * 0.5)));
+  dmg *= run.buff ?? 1;
+  const foeArmor = mon.armor + (target.affix === 'armored' ? 4 : 0);
+  dmg = Math.max(1, Math.round(dmg - foeArmor * (0.5 + rng() * 0.5)));
   target.hp -= dmg;
   say(run, crit ? 'fight.crit' : 'fight.hit', { foe: foeName(target), dmg }, 'good');
   if (md?.slays?.[mon.family]) say(run, 'fight.slay', { metal: `@mat.${md.id}`, foe: foeName(target) }, 'gain');
@@ -332,7 +334,8 @@ function foeAttack(c: Character, run: Run, cb: Combat, f: Foe, rng: Rng): boolea
   }
   const armor = armorValue(c);
   const reduce = (c.stance === 'defensive' ? armor * 0.75 : armor * (0.4 + rng() * 0.6)) * ARMOUR_SCALE;
-  const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * STANCE_TAKEN[c.stance] * wardMult(c, mon.family) - reduce));
+  const rage = f.affix === 'enraged' ? 1.3 : 1;
+  const dmg = Math.max(1, Math.round(randInt(rng, mon.dmg[0], mon.dmg[1]) * rage * STANCE_TAKEN[c.stance] * wardMult(c, mon.family) - reduce));
   c.hp -= dmg;
   say(run, 'fight.hurt', { foe: foeName(f), dmg }, 'bad');
   if (chance(rng, 0.25)) {
@@ -373,7 +376,8 @@ export function playRound(c: Character, run: Run, action: Action, rng: Rng): Out
   const init = new Map<unknown, number>();
   for (const o of order) {
     const kind = o.who === 'foe' ? o.f.kind : o.who === 'ally' ? allyKind(o.a) : null;
-    init.set(o, kind ? MONSTERS[kind].speed + randInt(rng, 0, 10) : myInit);
+    const swift = o.who === 'foe' && o.f.affix === 'swift' ? 8 : 0;
+    init.set(o, kind ? MONSTERS[kind].speed + swift + randInt(rng, 0, 10) : myInit);
   }
   order.sort((a, b) => init.get(b)! - init.get(a)!);
 

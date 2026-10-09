@@ -415,3 +415,7 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
 .slot-btn.on { border-color: var(--rust); background: #f3e8cc; }
 .doll-detail { border-top: 1px dotted var(--brass); margin-top: 8px; }
 .doll .part > .hit { stroke: none !important; }
+.omen { margin: 2px 0 6px; color: var(--umber); }
+.affix { color: var(--rust); font-weight: 600; }
+.event p { margin: 0 0 6px; }
+.map-wrap { scroll-behavior: smooth; }

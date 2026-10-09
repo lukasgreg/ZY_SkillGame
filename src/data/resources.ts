@@ -18,6 +18,8 @@ export const RESOURCE_IDS = [
   'etherealOre', 'ancientWood', 'dragonScale', 'planFragment',
   // adventuring
   'bandage', 'repairKit', 'wayHome', 'hide',
+  // dungeon loot
+  'bone', 'ectoplasm', 'gnarlTusk', 'spiderSilk',
 ] as const;
 
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -98,6 +100,10 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   repairKit: r('repairKit', 1, 15, 0.3),
   wayHome: r('wayHome', 0.1, 120, 2),
   hide: r('hide', 1, 3, 0.2),
+  bone: r('bone', 0.5, 3, 0.2),
+  ectoplasm: r('ectoplasm', 0.1, 12, 0.6),
+  gnarlTusk: r('gnarlTusk', 0.3, 15, 0.6),
+  spiderSilk: r('spiderSilk', 0.05, 5, 0.3),
 };
 
 /**

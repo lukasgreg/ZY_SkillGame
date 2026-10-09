@@ -5,6 +5,7 @@ import type { Slot } from '../data/items';
 import { equip, setStance, unequip, type Action } from '../engine/combat';
 import { feed, healPet, release, resurrect } from '../engine/pets';
 import { bump } from '../engine/achievements';
+import { chooseEvent, goBack, openBossChest } from '../engine/dungeon';
 import { camp, enter, fight, here, leave, lootCorpse, move, reengage, scout, useRepairKit, wayHome } from '../engine/dungeon';
 import { PLANS, type PlanId } from '../data/plans';
 import { abandon, accept, combineFragments, craftPlan, fortify, handIn } from '../engine/contracts';
@@ -467,5 +468,22 @@ export function releasePet(id: number): void {
   withPet(id, (s, c, p) => {
     release(c, p);
     log(s, 'log.pet.released', { pet: `@mon.${p.kind}` }, 'sys');
+  });
+}
+
+export function eventChoice(choice: string): void {
+  withChar((s, c) => void chooseEvent(s, c, choice, rng));
+}
+
+export function stepBack(): void {
+  const c = activeChar(getState());
+  if (!c?.run || transient.busy) return;
+  timed('travel', 500, () => withChar((_, c) => void goBack(c)));
+}
+
+export function openChest(): void {
+  withChar((s, c) => {
+    const d = c.run?.dungeon;
+    if (openBossChest(s, c, rng)) log(s, 'log.dun.chest', { d: `@dun.${d}` }, 'gain');
   });
 }

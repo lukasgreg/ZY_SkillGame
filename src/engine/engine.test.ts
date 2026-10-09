@@ -882,3 +882,64 @@ describe('armour pieces and weight', () => {
     expect(ch.equip.chest).toBe(7001);
   });
 });
+
+import { chooseEvent, goBack, omenOf, openBossChest } from './dungeon';
+
+describe('bigger random dungeons', () => {
+  it('maps are large, branching, all reachable, with side rooms and a boss at the end', () => {
+    for (const id of DUNGEON_IDS) {
+      for (const seed of [1, 2, 3, 99, 12345]) {
+        const nodes = generate(id, seed);
+        const layers = Math.max(...nodes.map((n) => n.layer)) + 1;
+        expect(layers).toBeGreaterThanOrEqual(14);
+        expect(layers).toBeLessThanOrEqual(31);
+        expect(nodes[nodes.length - 1].type).toBe('boss');
+        const reach = new Set([0]);
+        for (const n of nodes) if (reach.has(n.id)) n.next.forEach((x) => reach.add(x));
+        expect(reach.size).toBe(nodes.length);
+        // every non-dead room can still reach the boss
+        const boss = nodes.length - 1;
+        const canBoss = new Set([boss]);
+        for (let i = nodes.length - 1; i >= 0; i--) if (nodes[i].next.some((x) => canBoss.has(x))) canBoss.add(i);
+        for (const n of nodes) if (!n.dead && n.type !== 'boss') expect(canBoss.has(n.id)).toBe(true);
+      }
+    }
+    const many = [1, 2, 3, 4, 5, 6, 7, 8].map((sd) => generate('crypt', sd));
+    expect(many.some((ns) => ns.some((n) => n.dead))).toBe(true);
+    expect(many.some((ns) => ns.some((n) => n.type === 'event'))).toBe(true);
+  });
+
+  it('omens follow the seed', () => {
+    expect(omenOf(42)).toBe(omenOf(42));
+    const seen = new Set(Array.from({ length: 200 }, (_, i) => omenOf(i)));
+    expect(seen.size).toBeGreaterThan(3);
+  });
+
+  it('events resolve with choices; you can step back out of a side room', () => {
+    const { s, c } = warrior(31);
+    const rng = mulberry32(31);
+    const run = enter(s, c, 'crypt', rng)!;
+    const ev = run.nodes.find((n) => n.type === 'event' && n.event === 'fountain') ?? run.nodes.find((n) => n.type === 'event')!;
+    ev.event = 'fountain';
+    run.at = ev.id;
+    run.path.push(ev.id);
+    expect(chooseEvent(s, c, 'fill', rng)).toBe(true);
+    expect(ev.cleared).toBe(true);
+    expect(c.pack.res.herbalStew).toBe(1);
+    ev.oneWay = false;
+    expect(goBack(c)).toBe(true);
+    expect(run.at).not.toBe(ev.id);
+  });
+
+  it('the boss chest gives gold, gear and xp once', () => {
+    const { s, c } = warrior(32);
+    const rng = mulberry32(32);
+    const run = enter(s, c, 'manor', rng)!;
+    run.at = run.nodes.length - 1;
+    run.bossDown = true;
+    const items = c.pack.items.length;
+    expect(openBossChest(s, c, rng)).toBe(true);
+    expect(c.pack.items.length).toBeGreaterThan(items);
+    expect(openBossChest(s, c, rng)).toBe(false);
+  });
+});

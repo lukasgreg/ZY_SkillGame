@@ -1,11 +1,11 @@
-import type { DungeonId, MonsterId } from '../data/dungeons';
+import type { Affix, DungeonId, EventId, MonsterId, Omen } from '../data/dungeons';
 import type { ItemDefId, MetalId, Slot } from '../data/items';
 import type { PlanId } from '../data/plans';
 import type { ProfessionId, RaceId } from '../data/professions';
 import type { AreaId, GatherLoc, ResourceId } from '../data/resources';
 import type { SkillId, StatId } from '../data/skills';
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export type Lock = 'up' | 'down' | 'locked';
 export type Location = 'town' | GatherLoc | 'dungeon';
@@ -120,7 +120,7 @@ export interface Worker {
   produced: Partial<Record<ResourceId, number>>;
 }
 
-export type RoomType = 'start' | 'monster' | 'elite' | 'treasure' | 'shrine' | 'trap' | 'boss';
+export type RoomType = 'start' | 'monster' | 'elite' | 'treasure' | 'shrine' | 'trap' | 'event' | 'campfire' | 'cache' | 'boss';
 
 export interface DNode {
   id: number;
@@ -129,7 +129,11 @@ export interface DNode {
   next: number[];
   /** Entering this room seals the way back (a collapse or a drop). */
   oneWay: boolean;
+  /** A side room that leads nowhere; you come back the way you came. */
+  dead?: boolean;
   cleared: boolean;
+  /** What happens in an event room. */
+  event?: EventId;
   /** Monsters still here after you fled or died, with their wounds; they heal slowly from `foesAt`. */
   foes?: Foe[];
   foesAt?: number;
@@ -138,6 +142,9 @@ export interface DNode {
 export interface Foe {
   kind: MonsterId;
   hp: number;
+  /** Maximum hits (giants have more than their kind). */
+  max?: number;
+  affix?: Affix;
   /** Rounds left stunned. */
   stunned: number;
 }
@@ -194,6 +201,11 @@ export interface Run {
   log: LogEntry[];
   /** Gold and goods found this run (for the summary). */
   loot: number;
+  omen?: Omen;
+  /** Damage bonus for the rest of the run (from an altar). */
+  buff?: number;
+  /** The boss's chest has been opened. */
+  chestOpened?: boolean;
 }
 
 export interface Corpse {

@@ -7,7 +7,8 @@ import { defaultRng } from '../engine/rng';
 import { tickWanderers } from '../engine/wanderers';
 import { catchUp } from '../engine/workers';
 import { tickContracts } from '../engine/contracts';
-import { decay } from '../engine/dungeon';
+import { decay, nextSeed } from '../engine/dungeon';
+import { DUNGEON_IDS } from '../data/dungeons';
 import { checkAchievements } from '../engine/achievements';
 import { restPets, tickPets } from '../engine/pets';
 import type { ResourceId } from '../data/resources';
@@ -139,6 +140,7 @@ export function startClock(): void {
     regen(c, Date.now());
     if (tickWanderers(state, defaultRng, Date.now())) scheduleSave();
     if (tickContracts(state, c, defaultRng, Date.now())) scheduleSave();
+    for (const id of DUNGEON_IDS) if (state.dungeonSeeds[id] === undefined) nextSeed(state, id, defaultRng);
     for (const ch of state.chars) {
       if (decay(ch)) log(state, 'log.dun.decayed', { name: ch.name }, 'bad');
       if (!ch.pets.length) continue;

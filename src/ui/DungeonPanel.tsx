@@ -2,17 +2,20 @@ import { DUNGEONS, DUNGEON_IDS, MONSTERS, TAMEABLE } from '../data/dungeons';
 import { canControl, petMaxHp, tameChance, vetHeal } from '../engine/pets';
 import { RESOURCES, type ResourceId } from '../data/resources';
 import { ABILITY_COST, abilityFor, abilityOk, allies, armorValue, bandageHeal, fleeChance, hitChance, usesArrows, weaponInfo, type Ability } from '../engine/combat';
-import { canLeave, corpseFresh, exits, here, scoutCost } from '../engine/dungeon';
+import { EVENT_CHOICES, canLeave, corpseFresh, eventCost, exits, here, omenOf, scoutCost } from '../engine/dungeon';
+import { useEffect, useRef } from 'preact/hooks';
 import { maxHp, maxStamina } from '../engine/skills';
 import type { Character, DNode, GameState, Run, Stance } from '../engine/state';
 import { nameOf, num, t } from '../i18n';
 import {
-  campHere, changeStance, enterDungeon, fieldRepair, fightAction, leaveDungeon, lootMyCorpse, moveTo, reengageFoes, scoutDungeon, useWayHome,
+  campHere, changeStance, enterDungeon, eventChoice, openChest, stepBack, fieldRepair, fightAction, leaveDungeon, lootMyCorpse, moveTo, reengageFoes, scoutDungeon, useWayHome,
 } from './actions';
 import { Card, JournalLines, Meter } from './common';
 import { transient } from './store';
 
-const GLYPH: Record<DNode['type'], string> = { start: '⌂', monster: '⚔', elite: '✦', treasure: '◆', shrine: '✚', trap: '⚠', boss: '☠' };
+const GLYPH: Record<DNode['type'], string> = {
+  start: '⌂', monster: '⚔', elite: '✦', treasure: '◆', shrine: '✚', trap: '⚠', event: '❖', campfire: '☼', cache: '▣', boss: '☠',
+};
 const ABILITIES: Ability[] = ['secondWind', 'crushingBlow', 'leap', 'warcry', 'callWild'];
 const STANCES: Stance[] = ['normal', 'combat', 'defensive'];
 
@@ -64,13 +67,18 @@ function Board({ s, c }: { s: GameState; c: Character }) {
                   <Rating n={d.clocks} glyph="⧗" label={t('dun.length')} />
                 </div>
                 <p class="small muted">{t(`dun.${id}.desc`)}</p>
+                {s.dungeonSeeds[id] !== undefined && omenOf(s.dungeonSeeds[id]!) !== 'none' && (
+                  <p class="small omen">
+                    <b>{t(`omen.${omenOf(s.dungeonSeeds[id]!)}`)}:</b> {t(`omen.${omenOf(s.dungeonSeeds[id]!)}.desc`)}
+                  </p>
+                )}
                 {sc >= 2 && <p class="small">{t('dun.scoutBoss', { boss: t(`mon.${d.boss}`) })}</p>}
                 <div class="row">
-                  <button class="btn btn-small" disabled={!inTown || sc >= 1 || (!free && c.gold < scoutCost(id, 1))} onClick={() => scoutDungeon(id, 1)}>
-                    {sc >= 1 ? t('dun.scouted1') : free ? t('dun.trackFree') : t('dun.scout1', { p: scoutCost(id, 1) })}
+                  <button class="btn btn-small" disabled={!inTown || sc >= 1 || (!free && c.gold < scoutCost(id, 1, s.dungeonSeeds[id]))} onClick={() => scoutDungeon(id, 1)}>
+                    {sc >= 1 ? t('dun.scouted1') : free ? t('dun.trackFree') : t('dun.scout1', { p: scoutCost(id, 1, s.dungeonSeeds[id]) })}
                   </button>
-                  <button class="btn btn-small" disabled={!inTown || sc < 1 || sc >= 2 || c.gold < scoutCost(id, 2)} onClick={() => scoutDungeon(id, 2)}>
-                    {sc >= 2 ? t('dun.scouted2') : t('dun.scout2', { p: scoutCost(id, 2) })}
+                  <button class="btn btn-small" disabled={!inTown || sc < 1 || sc >= 2 || c.gold < scoutCost(id, 2, s.dungeonSeeds[id])} onClick={() => scoutDungeon(id, 2)}>
+                    {sc >= 2 ? t('dun.scouted2') : t('dun.scout2', { p: scoutCost(id, 2, s.dungeonSeeds[id]) })}
                   </button>
                   <button class="btn btn-small btn-primary" disabled={!inTown || busy} onClick={() => enterDungeon(id)}>
                     {corpseFresh(c) && c.corpse!.dungeon === id ? t('dun.recoverBtn') : t('dun.enterBtn')}
@@ -99,7 +107,12 @@ function MapView({ c, run }: { c: Character; run: Run }) {
   const byLayer: DNode[][] = Array.from({ length: layers }, () => []);
   for (const n of run.nodes) byLayer[n.layer].push(n);
   const W = 64;
-  const H = 210;
+  const H = 44 * Math.max(...byLayer.map((l) => l.length)) + 40;
+  const wrap = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = wrap.current;
+    if (el) el.scrollLeft = Math.max(0, (28 + here(run).layer * W) * 1.5 - el.clientWidth / 2);
+  }, [run.at]);
   const pos = (n: DNode) => {
     const col = byLayer[n.layer];
     const i = col.indexOf(n);
@@ -107,10 +120,11 @@ function MapView({ c, run }: { c: Character; run: Run }) {
   };
   const visited = new Set(run.path);
   const reach = new Set(exits(run).map((n) => n.id));
-  const known = (n: DNode) => run.scouted >= 1 || visited.has(n.id) || n.cleared;
+  // You can always see what lies one step ahead; scouting shows the whole map.
+  const known = (n: DNode) => run.scouted >= 1 || visited.has(n.id) || n.cleared || reach.has(n.id);
   const corpseAt = c.corpse && corpseFresh(c) && c.corpse.seed === run.seed ? c.corpse.node : -1;
   return (
-    <div class="map-wrap">
+    <div class="map-wrap" ref={wrap}>
       <svg class="map" viewBox={`0 0 ${28 * 2 + (layers - 1) * W} ${H}`} style={{ width: `${(28 * 2 + (layers - 1) * W) * 1.5}px`, height: `${H * 1.5}px` }} role="img" aria-label={t('dun.map')}>
         {run.nodes.flatMap((n) =>
           n.next.map((to) => {
@@ -157,12 +171,13 @@ function Fight({ c, run }: { c: Character; run: Run }) {
         {cb.foes.map((f, i) => (
           <li key={i} class={f.hp <= 0 ? 'dead' : ''}>
             <span>
+              {f.affix && <b class="affix">{t(`affix.${f.affix}`)} </b>}
               {t(`mon.${f.kind}`)} <span class="muted small">({t(`family.${MONSTERS[f.kind].family}`)})</span>
               {f.stunned > 0 && <span class="muted small"> · {t('fight.stunnedTag')}</span>}
             </span>
-            <Meter value={f.hp} max={MONSTERS[f.kind].hp} kind="hp" />
+            <Meter value={f.hp} max={f.max ?? MONSTERS[f.kind].hp} kind="hp" />
             <span class="small">
-              {f.hp}/{MONSTERS[f.kind].hp}
+              {f.hp}/{f.max ?? MONSTERS[f.kind].hp}
             </span>
           </li>
         ))}
@@ -248,8 +263,29 @@ function Room({ c, run }: { c: Character; run: Run }) {
   const atCorpse = c.corpse && corpseFresh(c) && c.corpse.seed === run.seed && c.corpse.node === node.id;
   const damaged = c.pack.items.filter((i) => i.dur < i.maxDur);
   return (
-    <Card title={t(`room.${node.type}`)}>
+    <Card title={node.type === 'event' && node.event ? t(`event.${node.event}.title`) : t(`room.${node.type}`)}>
       {run.sealed && !run.bossDown && <p class="warn small">{t('dun.sealedNote')}</p>}
+      {node.type === 'event' && node.event && !node.cleared && (
+        <div class="event">
+          <p>{t(`event.${node.event}.text`)}</p>
+          <div class="row">
+            {EVENT_CHOICES[node.event].map((ch) => {
+              const cost = eventCost(run, node.event!, ch);
+              return (
+                <button key={ch} class={`btn ${ch === 'leave' ? '' : 'btn-primary'}`} disabled={busy || cost > c.gold} onClick={() => eventChoice(ch)}>
+                  {t(`event.${node.event}.${ch}`, { p: cost })}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {node.type === 'boss' && run.bossDown && !run.chestOpened && (
+        <button class="btn btn-primary btn-big" onClick={openChest}>
+          {t('dun.openChest')}
+        </button>
+      )}
+      {node.dead && node.cleared && <p class="small muted">{t('dun.deadEnd')}</p>}
       {run.bossDown && <p class="good small">{t('dun.bossDownNote')}</p>}
       {atCorpse && (
         <button class="btn btn-primary" onClick={lootMyCorpse}>
@@ -270,7 +306,7 @@ function Room({ c, run }: { c: Character; run: Run }) {
           <div class="row">
             {next.map((n) => (
               <button key={n.id} class="btn" disabled={busy} onClick={() => moveTo(n.id)}>
-                {run.scouted >= 1 || n.cleared || n.type === 'boss' ? `${GLYPH[n.type]} ${t(`room.${n.type}`)}` : `? ${t('room.unknown')}`}
+                {GLYPH[n.type]} {n.type === 'event' && n.event ? t(`event.${n.event}.title`) : t(`room.${n.type}`)}
                 {n.oneWay && run.scouted >= 2 && <span class="warn small"> ↯</span>}
               </button>
             ))}
@@ -280,6 +316,9 @@ function Room({ c, run }: { c: Character; run: Run }) {
       <div class="row">
         <button class="btn" disabled={busy} onClick={campHere}>
           {transient.busy?.kind === 'search' ? t('dun.camping') : t('dun.camp')}
+        </button>
+        <button class="btn" disabled={busy || run.path.length < 2 || node.oneWay || (!node.cleared && !run.retreated)} onClick={stepBack}>
+          {t('dun.back')}
         </button>
         <button class="btn" disabled={busy || !canLeave(run)} onClick={leaveDungeon}>
           {t('dun.leave')}
@@ -315,6 +354,11 @@ export function DungeonPanel({ s, c }: { s: GameState; c: Character }) {
   return (
     <div class="stack">
       <Card title={t(`dun.${run.dungeon}`)} note={t('dun.mapNote')}>
+        {run.omen && run.omen !== 'none' && (
+          <p class="small omen">
+            <b>{t(`omen.${run.omen}`)}:</b> {t(`omen.${run.omen}.desc`)}
+          </p>
+        )}
         <MapView c={c} run={run} />
         <div class="row small">
           <span>
