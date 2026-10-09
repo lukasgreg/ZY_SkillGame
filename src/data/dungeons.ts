@@ -157,7 +157,7 @@ export interface DungeonDef {
 }
 
 export const DUNGEONS: Record<DungeonId, DungeonDef> = {
-  wilds: { id: 'wilds', skulls: 2, clocks: 1, pool: ['stag', 'boar', 'wolf', 'spider'], elite: 'bear', boss: 'drake', chest: [10, 40] },
+  wilds: { id: 'wilds', skulls: 2, clocks: 1, pool: ['stag', 'boar', 'wolf', 'spider'], elite: 'bear', boss: 'direwolf', chest: [10, 40] },
   cellar: { id: 'cellar', skulls: 1, clocks: 1, pool: ['rat', 'spider', 'smuggler'], elite: 'thug', boss: 'smugglerChief', chest: [20, 60] },
   frostCave: { id: 'frostCave', skulls: 2, clocks: 2, pool: ['iceBat', 'frostWolf', 'yeti'], elite: 'caveTroll', boss: 'frostfang', chest: [40, 120] },
   manor: { id: 'manor', skulls: 3, clocks: 2, pool: ['skeleton', 'ghoul', 'banshee'], elite: 'wraith', boss: 'hollowLord', chest: [80, 200] },

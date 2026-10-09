@@ -10,6 +10,7 @@ import { findNode, pull, pullStamina } from './gather';
 import { effectiveCap } from './levels';
 import { mulberry32 } from './rng';
 import { maxHp } from './skills';
+import { makePet } from './pets';
 import { newGameState, type Character, type GameState } from './state';
 
 const SIM = !!(globalThis as { process?: { env?: Record<string, string> } }).process?.env?.SIM;
@@ -55,7 +56,7 @@ describe.skipIf(!SIM)('balance simulations', () => {
 
   it('a new warrior running dungeons over and over', () => {
     for (const prof of ['warrior', 'ranger'] as const) {
-      const { s, c, rng } = fresh(prof, 7);
+      const { s, c, rng } = fresh(prof, 11);
       const lines: string[] = [];
       let runs = 0;
       let deaths = 0;
@@ -74,6 +75,8 @@ describe.skipIf(!SIM)('balance simulations', () => {
         c.pack.res.bandage = 10;
         if (prof === 'ranger') c.pack.res.arrow = 150;
         for (const it of c.pack.items) it.dur = it.maxDur;
+        // A ranger keeps a wolf by their side (re-tamed in the Wilds when lost).
+        if (prof === 'ranger' && !c.pets.some((p) => !p.dead)) c.pets = [makePet('wolf', Date.now())];
         for (const p of c.pets) (p.hp = 999, (p.dead = false), (p.fedAt = Date.now()));
         const r = simRun(s, c, target, rng);
         rounds += r.rounds;

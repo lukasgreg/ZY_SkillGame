@@ -38,6 +38,12 @@ Each phase is playable and deployed on its own. **Status** shows where to pick u
 - Warrior: level 4 after 10 runs, level 13 after 60. Deaths fall to about 1 in 5 runs once levelled.
 - Ranger: level 4 after 10 runs, with 4 deaths.
 
+**Second round, after phases H–M** (seed 11, warrior and ranger, 120 runs each, moving to the next dungeon once it's easy)
+- The Hunting Grounds had a drake (220 hits) as its boss, which killed everyone moving up from the Cellar. Its boss is now a dire wolf; drakes only appear in lairs of hard dungeons.
+- **Warrior:** Cellar level 5 after 10 runs with no deaths, level 14 after 60. Hunting Grounds, then Frostfang Cave by run about 70. Deaths start again at Frostfang (level 17–19), as intended.
+- **Ranger with a pet:** level 12 after 30 runs with no deaths, Frostfang Cave at level 18.
+- **Ranger who loses the starting hound and never tames again:** keeps dying in the Hunting Grounds. Rangers are a pet class; the beginner's guide sends them to the Wilds.
+
 ## H. Alchemy and potions (Andaria), with poison
 Andaria's alchemy uses one reagent per basic potion. Healing needs only 4% Alchemy; ink needs 50%.
 Two simple potions can be mixed into a stronger one.
